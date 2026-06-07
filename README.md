@@ -1,0 +1,95 @@
+# Verk
+
+Site operations layer for ProcessWire. Not a generic PM — a tool built around PW's data model.
+
+Tasks are linked to PW Pages. Sprints group delivery work by week, month, or quarter. The Editorial Calendar reads real page date fields and task due dates. Content Audit runs PW selectors with field-path checks. Everything stays inside your PW install.
+
+## What it does
+
+| Section | Purpose |
+|---|---|
+| **Dashboard** | Open tasks, upcoming publications, audit alerts, and active sprint planning |
+| **Tasks** | Create/assign tasks linked to specific PW pages — one click opens the page editor |
+| **Calendar** | Month, week, and quarter views for page publications + task due dates |
+| **Content Audit** | Run PW selectors and dot-notation field checks to find missing content |
+| **Knowledge Base** | Rich editorial notes organized by category, searchable and exportable |
+| **Sprints** | Sprint planning, quarter grouping, task assignment, DOCX export, and progress tracking |
+| **Settings** | Calendar source, fiscal quarter start, and configurable Page Editor Widget |
+
+## Key features
+
+- **Page Picker** — live search across PW pages when creating a task; task stores `page_id`
+- **Edit in PW** — every task with a linked page shows a direct `/admin/page/edit/?id=X` button
+- **View on site** — opens the front-end URL in a new tab
+- **Page Editor Widget** — Verk injects a configurable task widget into ProcessPageEdit, with live settings preview
+- **Audit to tasks** — create one task or bulk tasks from audit results; page context is prefilled
+- **Calendar** — configurable publication source plus task due dates in month, week, and quarter views
+- **Quarter planning** — fiscal quarter start month, sprint quarter filters, date planning helpers, and quarter labels on tasks
+- **Rich text** — task descriptions, comments, note content, and sprint goals use TinyMCE when `InputfieldTinyMCE` is installed
+- **DOCX exports** — task lists, notes, sprints, and knowledge base exports
+- **Audit rules** — plain text config: `Label | Scope selector | Field path | Message`, with dot-notation subfields
+- **Return-aware forms** — create/edit flows can preserve filtered list URLs and return users to the exact context they came from
+
+## Requirements
+
+- ProcessWire >= 3.0.200
+- PHP >= 8.0
+- InputfieldTinyMCE is optional but used automatically for rich text fields when installed
+
+## Installation
+
+1. Copy `Verk/` to `site/modules/`
+2. Admin > Modules > Refresh > Install **Verk**
+3. Go to Admin > Verk > Settings and configure:
+   - Calendar template(s)
+   - Calendar date field
+   - Quarter start month
+   - Page Editor Widget display options
+
+## Upgrade
+
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.0` is published as module version `120`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
+
+## Database tables
+
+| Table | Contents |
+|---|---|
+| `vk_tasks` | Tasks with `page_id` FK to PW pages |
+| `vk_comments` | Discussion threads on tasks |
+| `vk_notes` | Knowledge base articles |
+| `vk_sprints` | Sprint windows, goals, and status |
+| `vk_time_logs` | Time entries linked to tasks |
+
+## Audit rule format
+
+```
+# Comment lines are ignored
+Products without images | template=product | images | No product images
+Empty body text | template!=admin | body | Body field empty
+Missing SEO title | template!=admin | seo.title | SEO title not set
+Missing city | template=location | address.city | City is missing
+Missing price amount | template=product | prices.*.amount | Price amount is empty
+```
+
+Columns:
+
+1. `Label` — shown as the audit tab/result title.
+2. `Scope selector` — standard ProcessWire selector used to find candidate pages.
+3. `Field path` — ProcessWire field name or dot-notation subfield path to test.
+4. `Message` — displayed when the field path is empty or unavailable.
+
+## Architecture decision
+
+Tasks link to PW pages via `page_id` (integer). The page data itself lives in PW — Verk never duplicates it. If a page is deleted in PW, the task orphans gracefully (linked page disappears, task remains).
+
+The page editor widget uses `hookAfter('ProcessPageEdit::buildForm')` — no template files modified. Widget output is controlled from Verk Settings and can show/hide status, priority, due date, quarter, assignee, empty state, and create link.
+
+## License
+
+MIT
+
+## Author
+
+Maxim Semenov  
+https://smnv.org  
+maxim@smnv.org
