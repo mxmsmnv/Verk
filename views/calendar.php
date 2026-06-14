@@ -57,28 +57,29 @@ $prevQuarter = $quarter <= 1 ? 4 : $quarter - 1;
 $prevQuarterYear = $quarter <= 1 ? $year - 1 : $year;
 $nextQuarter = $quarter >= 4 ? 1 : $quarter + 1;
 $nextQuarterYear = $quarter >= 4 ? $year + 1 : $year;
+$calendarAssigneeParam = !empty($calendarAssigneeId) ? '&assignee_id=' . (int)$calendarAssigneeId : '';
 $prevHref = match($calView) {
-    'week' => $url . '?view=calendar&cal_view=week&date=' . $prevWeekDate,
-    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $prevQuarter . '&year=' . $prevQuarterYear,
-    default => $url . '?view=calendar&month=' . $prevMonth . '&year=' . $prevYear,
+    'week' => $url . '?view=calendar&cal_view=week&date=' . $prevWeekDate . $calendarAssigneeParam,
+    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $prevQuarter . '&year=' . $prevQuarterYear . $calendarAssigneeParam,
+    default => $url . '?view=calendar&month=' . $prevMonth . '&year=' . $prevYear . $calendarAssigneeParam,
 };
 $nextHref = match($calView) {
-    'week' => $url . '?view=calendar&cal_view=week&date=' . $nextWeekDate,
-    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $nextQuarter . '&year=' . $nextQuarterYear,
-    default => $url . '?view=calendar&month=' . $nextMonth . '&year=' . $nextYear,
+    'week' => $url . '?view=calendar&cal_view=week&date=' . $nextWeekDate . $calendarAssigneeParam,
+    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $nextQuarter . '&year=' . $nextQuarterYear . $calendarAssigneeParam,
+    default => $url . '?view=calendar&month=' . $nextMonth . '&year=' . $nextYear . $calendarAssigneeParam,
 };
 $todayQuarterContext = $this->quarterContextForDate(date('Y-m-d'));
 $todayQuarter = (int)$todayQuarterContext['quarter'];
 $todayQuarterYear = (int)$todayQuarterContext['year'];
 $todayHref = match($calView) {
-    'week' => $url . '?view=calendar&cal_view=week&date=' . date('Y-m-d'),
-    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $todayQuarter . '&year=' . $todayQuarterYear,
-    default => $url . '?view=calendar',
+    'week' => $url . '?view=calendar&cal_view=week&date=' . date('Y-m-d') . $calendarAssigneeParam,
+    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . $todayQuarter . '&year=' . $todayQuarterYear . $calendarAssigneeParam,
+    default => $url . '?view=calendar' . $calendarAssigneeParam,
 };
 $calendarReturnUrl = match($calView) {
-    'week' => $url . '?view=calendar&cal_view=week&date=' . ($weekStartDate ?: date('Y-m-d')),
-    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . (int)$quarter . '&year=' . (int)$quarterYear,
-    default => $url . '?view=calendar&month=' . (int)$month . '&year=' . (int)$year,
+    'week' => $url . '?view=calendar&cal_view=week&date=' . ($weekStartDate ?: date('Y-m-d')) . $calendarAssigneeParam,
+    'quarter' => $url . '?view=calendar&cal_view=quarter&quarter=' . (int)$quarter . '&year=' . (int)$quarterYear . $calendarAssigneeParam,
+    default => $url . '?view=calendar&month=' . (int)$month . '&year=' . (int)$year . $calendarAssigneeParam,
 };
 $calendarReturnParam = rawurlencode($calendarReturnUrl);
 $quarterMonths = $calView === 'quarter' ? ($quarterMonths ?? []) : [];
@@ -107,9 +108,14 @@ $renderDay = function(string $dateForTask, bool $isOther = false) use ($url, $it
             $taskDate = !empty($task['due_date']) ? date('M j', strtotime($task['due_date'])) : '';
             $taskStatus = preg_replace('/[^a-z0-9_-]/', '', (string)($task['status'] ?? 'open'));
             $taskPriority = preg_replace('/[^a-z0-9_-]/', '', (string)($task['priority'] ?? 'medium'));
-            echo '<a href="' . $taskUrl . '" class="vk-cal-item vk-cal-task is-' . $taskStatus . ' is-priority-' . $taskPriority . '" title="' . __('Task:') . ' ' . htmlspecialchars($task['title']) . '">'
-                . '<span>' . htmlspecialchars(mb_strimwidth($task['title'], 0, 22, '…')) . '</span>'
-                . ($taskDate ? '<small class="vk-cal-task-date">' . htmlspecialchars($taskDate) . ' · ' . htmlspecialchars($this->statusLabel((string)$task['status'])) . '</small>' : '')
+            $taskMeta = array_filter([
+                $taskDate,
+                $this->statusLabel((string)$task['status']),
+                (string)($task['assignee_name'] ?? ''),
+            ]);
+            echo '<a href="' . $taskUrl . '" class="vk-cal-item vk-cal-task is-' . $taskStatus . ' is-priority-' . $taskPriority . '" title="' . __('Task:') . ' ' . htmlspecialchars((string)$task['title']) . '">'
+                . '<span>' . htmlspecialchars(mb_strimwidth((string)$task['title'], 0, 22, '…')) . '</span>'
+                . ($taskMeta ? '<small class="vk-cal-task-date">' . htmlspecialchars(implode(' · ', $taskMeta)) . '</small>' : '')
                 . '</a>';
         }
     }
@@ -136,9 +142,9 @@ ob_start();
     <a href="<?= $nextHref ?>" class="uk-button uk-button-default uk-button-small"><i class="fa fa-chevron-right"></i></a>
     <a href="<?= $todayHref ?>" class="uk-button uk-button-default uk-button-small"><i class="fa fa-calendar-check-o"></i> <?= __('Today') ?></a>
     <div class="vk-cal-mode">
-        <a href="<?= $url ?>?view=calendar&month=<?= (int)$month ?>&year=<?= (int)$monthLinkYear ?>" class="<?= $calView === 'month' ? 'is-active' : '' ?>"><?= __('Month') ?></a>
-        <a href="<?= $url ?>?view=calendar&cal_view=week&date=<?= htmlspecialchars($weekLinkDate) ?>" class="<?= $calView === 'week' ? 'is-active' : '' ?>"><?= __('Week') ?></a>
-        <a href="<?= $url ?>?view=calendar&cal_view=quarter&quarter=<?= (int)$quarter ?>&year=<?= (int)$quarterYear ?>" class="<?= $calView === 'quarter' ? 'is-active' : '' ?>"><?= __('Quarter') ?></a>
+        <a href="<?= $url ?>?view=calendar&month=<?= (int)$month ?>&year=<?= (int)$monthLinkYear ?><?= $calendarAssigneeParam ?>" class="<?= $calView === 'month' ? 'is-active' : '' ?>"><?= __('Month') ?></a>
+        <a href="<?= $url ?>?view=calendar&cal_view=week&date=<?= htmlspecialchars($weekLinkDate) ?><?= $calendarAssigneeParam ?>" class="<?= $calView === 'week' ? 'is-active' : '' ?>"><?= __('Week') ?></a>
+        <a href="<?= $url ?>?view=calendar&cal_view=quarter&quarter=<?= (int)$quarter ?>&year=<?= (int)$quarterYear ?><?= $calendarAssigneeParam ?>" class="<?= $calView === 'quarter' ? 'is-active' : '' ?>"><?= __('Quarter') ?></a>
     </div>
     <form method="get" action="<?= $url ?>" class="vk-cal-jump">
         <input type="hidden" name="view" value="calendar">
@@ -160,6 +166,12 @@ ob_start();
         </select>
         <input type="number" name="year" class="uk-input vk-control-small" min="2000" max="2100" value="<?= (int)$year ?>" aria-label="<?= __('Year') ?>">
         <?php endif; ?>
+        <select name="assignee_id" class="uk-select vk-control-small" aria-label="<?= __('Assignee') ?>">
+            <option value="0"><?= __('All assignees') ?></option>
+            <?php foreach (($calendarUsers ?? []) as $calendarUser): ?>
+            <option value="<?= (int)$calendarUser['id'] ?>" <?= (int)$calendarAssigneeId === (int)$calendarUser['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)$calendarUser['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
         <button type="submit" class="uk-button uk-button-default uk-button-small"><?= __('Go') ?></button>
     </form>
 </div>
@@ -325,12 +337,17 @@ ob_start();
         $taskUrl = $url . '?view=task-edit&id=' . (int)$task['id'] . '&return_url=' . $calendarReturnParam;
         $taskStatus = (string)($task['status'] ?? 'open');
         $taskPriority = (string)($task['priority'] ?? 'medium');
+        $agendaMeta = array_filter([
+            $this->statusLabel($taskStatus),
+            $this->priorityLabel($taskPriority),
+            (string)($task['assignee_name'] ?? ''),
+        ]);
         ?>
         <a href="<?= $taskUrl ?>" class="vk-cal-agenda-row" data-agenda-status="<?= htmlspecialchars($taskStatus) ?>">
             <span class="vk-cal-agenda-date"><?= htmlspecialchars(date('M j', strtotime((string)$task['due_date']))) ?></span>
             <span class="vk-cal-agenda-main">
-                <span class="vk-cal-agenda-title"><?= htmlspecialchars($task['title']) ?></span>
-                <span class="vk-cal-agenda-meta"><?= htmlspecialchars($this->statusLabel($taskStatus)) ?> · <?= htmlspecialchars($this->priorityLabel($taskPriority)) ?></span>
+                <span class="vk-cal-agenda-title"><?= htmlspecialchars((string)$task['title']) ?></span>
+                <span class="vk-cal-agenda-meta"><?= htmlspecialchars(implode(' · ', $agendaMeta)) ?></span>
             </span>
             <span class="uk-label vk-label-<?= htmlspecialchars($taskStatus) ?>"><?= htmlspecialchars($this->statusLabel($taskStatus)) ?></span>
         </a>

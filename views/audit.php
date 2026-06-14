@@ -121,10 +121,10 @@ ob_start();
                     <input type="checkbox" name="vk_page_cb" value="<?= $p['id'] ?>" class="vk-row-check uk-checkbox">
                 </div>
                 <div class="vk-audit-page-main">
-                    <a href="<?= $p['edit'] ?>" target="_blank" class="vk-audit-page-title"><?= htmlspecialchars($p['title']) ?></a>
+                    <a href="<?= $p['edit'] ?>" target="_blank" class="vk-audit-page-title"><?= htmlspecialchars((string)$p['title']) ?></a>
                     <div class="vk-audit-page-meta">
-                        <span><?= htmlspecialchars($p['template']) ?></span>
-                        <span><?= htmlspecialchars($p['url']) ?></span>
+                        <span><?= htmlspecialchars((string)$p['template']) ?></span>
+                        <span><?= htmlspecialchars((string)$p['url']) ?></span>
                     </div>
                 </div>
                 <div class="vk-audit-page-actions">

@@ -367,7 +367,7 @@ ob_start();
             <div class="vk-issue-row-main">
                 <div class="vk-issue-title-line">
                     <span class="vk-issue-key"><?= __('TASK') ?>-<?= (int)$t['id'] ?></span>
-                    <a href="<?= $url ?>?view=task-edit&id=<?= (int)$t['id'] ?>&return_url=<?= $taskListReturnParam ?>" class="vk-issue-row-title"><?= htmlspecialchars($t['title']) ?></a>
+                    <a href="<?= $url ?>?view=task-edit&id=<?= (int)$t['id'] ?>&return_url=<?= $taskListReturnParam ?>" class="vk-issue-row-title"><?= htmlspecialchars((string)$t['title']) ?></a>
                 </div>
                 <?php if ($taskDescription): ?>
                 <div class="vk-issue-description"><?= htmlspecialchars($taskDescription) ?></div>
@@ -376,7 +376,7 @@ ob_start();
                     <?php if ($t['section']): ?><span><?= htmlspecialchars($t['section']) ?></span><?php endif; ?>
                     <span class="<?= $t['assignee_name'] ? '' : 'is-muted' ?>"><i class="fa fa-user-o"></i> <?= $t['assignee_name'] ? htmlspecialchars($t['assignee_name']) : __('Unassigned') ?></span>
                     <?php if ($t['sprint_name']): ?><span><i class="fa fa-bolt"></i> <?= htmlspecialchars($t['sprint_name']) ?></span><?php endif; ?>
-                    <?php if (!empty($t['linked_page'])): ?><span><a href="<?= $t['linked_page_edit'] ?>" class="vk-inline-page-link" target="_blank"><i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars(mb_strimwidth($t['linked_page']->title, 0, 34, '...')) ?></a></span><?php endif; ?>
+                    <?php if (!empty($t['linked_page_title'])): ?><span><a href="<?= $t['linked_page_edit'] ?>" class="vk-inline-page-link" target="_blank"><i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars(mb_strimwidth((string)$t['linked_page_title'], 0, 34, '...')) ?></a></span><?php endif; ?>
                     <span class="<?= ($t['due_date'] && $t['due_date'] < $today && $t['status'] !== 'done') ? 'is-overdue' : (!$t['due_date'] ? 'is-muted' : '') ?>"><i class="fa fa-calendar-o"></i> <?= $t['due_date'] ? htmlspecialchars($t['due_date']) : __('No due date') ?></span>
                     <?php if ($t['due_date']): ?><span class="vk-quarter-inline"><?= htmlspecialchars($this->quarterLabelForDate($t['due_date'])) ?></span><?php endif; ?>
                 </div>
@@ -387,7 +387,8 @@ ob_start();
                 <?php if ($t['story_points']): ?><span class="vk-sprint-pill"><?= (int)$t['story_points'] ?> <?= __('SP') ?></span><?php endif; ?>
                 <?php if($t['estimate_h']): ?><span class="vk-sprint-pill"><?= htmlspecialchars((string)$t['estimate_h']) ?>h</span><?php endif; ?>
                 <?php if($t['actual_h'] !== null && $t['actual_h'] !== ''): ?><span class="vk-sprint-pill <?= ($t['estimate_h'] && $t['actual_h'] > $t['estimate_h']) ? 'is-over' : '' ?>"><?= number_format((float)$t['actual_h'],1) ?>h</span><?php endif; ?>
-                <?php if (!empty($t['linked_page_url'])): ?><a href="<?= $t['linked_page_url'] ?>" class="vk-icon-button" target="_blank" title="<?= __('Open page') ?>" aria-label="<?= __('Open page') ?>"><i class="fa fa-external-link"></i></a><?php endif; ?>
+                <?php if (!empty($t['linked_page_edit'])): ?><a href="<?= $t['linked_page_edit'] ?>" class="vk-icon-button" target="_blank" title="<?= __('Edit linked page') ?>" aria-label="<?= __('Edit linked page') ?>"><i class="fa fa-pencil-square-o"></i></a><?php endif; ?>
+                <?php if (!empty($t['linked_page_url']) && !empty($t['linked_page_viewable'])): ?><a href="<?= $t['linked_page_url'] ?>" class="vk-icon-button" target="_blank" title="<?= __('Open page') ?>" aria-label="<?= __('Open page') ?>"><i class="fa fa-external-link"></i></a><?php endif; ?>
                 <a href="<?= $url ?>?view=task-edit&id=<?= (int)$t['id'] ?>&return_url=<?= $taskListReturnParam ?>" class="vk-icon-button" title="<?= __('Edit') ?>" aria-label="<?= __('Edit') ?>"><i class="fa fa-pencil"></i></a>
             </div>
         </article>
