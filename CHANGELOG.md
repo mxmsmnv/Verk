@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.1] - 2026-06-14
+
+### Changed
+- Tasks with linked ProcessWire pages now show a stable page label, keep an edit action visible, and only show the public view action when the page is viewable.
+- Calendar task deadlines now include assignee names and can be filtered by assignee.
+- Task estimate options now include `1, 2, 4, 6, 8, 12, 16, 24, 32, 40` hours.
+- Task edit sidebar width and warning-count contrast were adjusted for readability.
+- Rich-text editors in Verk use a task-safe TinyMCE toolbar without image-picker actions.
+- Module version bumped to `121` so ProcessWire detects the `1.2.1` patch upgrade.
+
+### Fixed
+- Fixed PHP 8.1+ deprecation warnings from passing null page titles into `htmlspecialchars()` and `mb_strimwidth()`.
+- Content Audit now skips pages that do not have the audited field instead of reporting system/admin pages that cannot satisfy the rule.
+
 ## [1.2.0] - 2026-06-06
 
 ### Added

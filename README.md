@@ -48,7 +48,11 @@ Tasks are linked to PW Pages. Sprints group delivery work by week, month, or qua
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.0` is published as module version `120`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.1` is published as module version `121`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
+
+## Versioning
+
+Verk uses SemVer (`Major.Minor.Patch`). Every code update should include the matching module version bump and a short entry in `CHANGELOG.md`; patch releases are for fixes and small polish, minor releases are for new backwards-compatible features, and major releases are for breaking changes.
 
 ## Database tables
 
