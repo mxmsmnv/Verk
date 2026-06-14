@@ -598,6 +598,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $month     = max(1, min(12, (int)($input->get('month') ?: date('n'))));
         $year      = max(2000, min(2100, (int)($input->get('year') ?: date('Y'))));
         $weekDate  = $this->sanDate($input->get('date')) ?: date('Y-m-d');
+        $calendarAssigneeId = max(0, (int)$input->get('assignee_id'));
         $quarterInput = (int)$input->get('quarter');
         $quarterContext = $quarterInput
             ? $this->quarterContext($quarterInput, $year)
@@ -616,7 +617,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             $quarter = (int)$quarterContext['quarter'];
             $quarterYear = (int)$quarterContext['year'];
             $items = $this->getCalendarItemsRange($weekStartDate, $weekEndDate);
-            $deadlines = $this->getTaskDeadlinesRange($weekStartDate, $weekEndDate);
+            $deadlines = $this->getTaskDeadlinesRange($weekStartDate, $weekEndDate, $calendarAssigneeId);
             $quarterStartDate = '';
             $quarterEndDate = '';
             $quarterMonths = [];
@@ -627,13 +628,13 @@ class Verk extends Process implements Module, ConfigurableModule {
             $quarterStartDate = $quarterContext['start'];
             $quarterEndDate = $quarterContext['end'];
             $items = $this->getCalendarItemsRange($quarterStartDate, $quarterEndDate, 300);
-            $deadlines = $this->getTaskDeadlinesRange($quarterStartDate, $quarterEndDate);
+            $deadlines = $this->getTaskDeadlinesRange($quarterStartDate, $quarterEndDate, $calendarAssigneeId);
             $quarterMonths = $quarterContext['months'];
             $weekStartDate = '';
             $weekEndDate = '';
         } else {
             $items = $this->getCalendarItems($month, $year);
-            $deadlines = $this->getTaskDeadlines($month, $year);
+            $deadlines = $this->getTaskDeadlines($month, $year, $calendarAssigneeId);
             $quarterMonths = [];
             $weekStartDate = '';
             $weekEndDate = '';
@@ -648,21 +649,25 @@ class Verk extends Process implements Module, ConfigurableModule {
             'no_due' => 0,
             'quarter_open' => 0,
         ];
+        $calendarStatsWhere = $calendarAssigneeId > 0 ? ' WHERE assignee_id = :assignee_id' : '';
         $stmt = $this->wire('database')->prepare(
             "SELECT
                 SUM(CASE WHEN status != 'done' AND due_date IS NOT NULL AND due_date < :today THEN 1 ELSE 0 END) AS overdue,
                 SUM(CASE WHEN status != 'done' AND due_date IS NOT NULL AND due_date >= :today AND due_date <= :next7 THEN 1 ELSE 0 END) AS next7,
                 SUM(CASE WHEN status != 'done' AND due_date IS NULL THEN 1 ELSE 0 END) AS no_due,
                 SUM(CASE WHEN status != 'done' AND due_date IS NOT NULL AND due_date >= :quarter_start AND due_date <= :quarter_end THEN 1 ELSE 0 END) AS quarter_open
-             FROM vk_tasks"
+             FROM vk_tasks$calendarStatsWhere"
         );
-        $stmt->execute([
+        $calendarStatsParams = [
             ':today' => $today,
             ':next7' => $next7,
             ':quarter_start' => $quarterContext['start'],
             ':quarter_end' => $quarterContext['end'],
-        ]);
+        ];
+        if ($calendarAssigneeId > 0) $calendarStatsParams[':assignee_id'] = $calendarAssigneeId;
+        $stmt->execute($calendarStatsParams);
         $calendarPlanStats = array_merge($calendarPlanStats, array_map('intval', $stmt->fetch(\PDO::FETCH_ASSOC) ?: []));
+        $calendarUsers = $this->getAllUsers();
         ob_start(); require __DIR__ . '/views/calendar.php'; return ob_get_clean();
     }
 
@@ -1042,13 +1047,15 @@ class Verk extends Process implements Module, ConfigurableModule {
         $task['linked_page_edit'] = '';
         $task['linked_page_url']  = '';
         $task['linked_page_title'] = '';
+        $task['linked_page_viewable'] = false;
         if (!empty($task['page_id'])) {
             $p = $this->wire('pages')->get((int)$task['page_id']);
             if ($p->id) {
                 $task['linked_page']      = $p;
                 $task['linked_page_edit'] = $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id;
-                $task['linked_page_url']  = $p->httpUrl();
-                $task['linked_page_title'] = (string)$p->title;
+                $task['linked_page_viewable'] = $p->viewable();
+                $task['linked_page_url']  = $task['linked_page_viewable'] ? $p->httpUrl() : '';
+                $task['linked_page_title'] = $this->pageTitleForDisplay($p);
             }
         }
         return $task;
@@ -1070,8 +1077,9 @@ class Verk extends Process implements Module, ConfigurableModule {
                 $p = $pageMap[$pid];
                 $t['linked_page']      = $p;
                 $t['linked_page_edit'] = $adminUrl . 'page/edit/?id=' . $p->id;
-                $t['linked_page_url']  = $p->httpUrl();
-                $t['linked_page_title'] = (string)$p->title;
+                $t['linked_page_viewable'] = $p->viewable();
+                $t['linked_page_url']  = $t['linked_page_viewable'] ? $p->httpUrl() : '';
+                $t['linked_page_title'] = $this->pageTitleForDisplay($p);
             }
         }
         return $tasks;
@@ -1092,7 +1100,13 @@ class Verk extends Process implements Module, ConfigurableModule {
         $task['linked_page_edit'] = '';
         $task['linked_page_url'] = '';
         $task['linked_page_title'] = '';
+        $task['linked_page_viewable'] = false;
         return $task;
+    }
+
+    protected function pageTitleForDisplay(Page $page): string {
+        $title = trim((string)$page->title);
+        return $title !== '' ? $title : ('#' . (int)$page->id . ' ' . $page->name);
     }
 
     protected function getUpcomingPublications(int $days = 14): array {
@@ -1160,23 +1174,31 @@ class Verk extends Process implements Module, ConfigurableModule {
         return $byDay;
     }
 
-    protected function getTaskDeadlines(int $month, int $year): array {
+    protected function getTaskDeadlines(int $month, int $year, int $assigneeId = 0): array {
         $start = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-01";
         $end   = date('Y-m-t', strtotime($start));
-        return $this->getTaskDeadlinesRange($start, $end);
+        return $this->getTaskDeadlinesRange($start, $end, $assigneeId);
     }
 
-    protected function getTaskDeadlinesRange(string $start, string $end): array {
+    protected function getTaskDeadlinesRange(string $start, string $end, int $assigneeId = 0): array {
+        $where = "due_date IS NOT NULL AND due_date >= :start AND due_date <= :end";
+        $params = [':start' => $start, ':end' => $end];
+        if ($assigneeId > 0) {
+            $where .= " AND assignee_id = :assignee_id";
+            $params[':assignee_id'] = $assigneeId;
+        }
         $stmt = $this->wire('database')->prepare(
-            "SELECT id, title, due_date, priority, status FROM vk_tasks
-             WHERE due_date IS NOT NULL AND due_date >= :start AND due_date <= :end
+            "SELECT id, title, due_date, priority, status, assignee_id FROM vk_tasks
+             WHERE $where
              ORDER BY due_date ASC"
         );
-        $stmt->execute([':start' => $start, ':end' => $end]);
+        $stmt->execute($params);
         $tasks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $userMap = $this->getUserMap();
 
         $byDay = [];
         foreach ($tasks as $t) {
+            $t['assignee_name'] = $userMap[(int)($t['assignee_id'] ?? 0)] ?? '';
             $dateKey = substr((string)$t['due_date'], 0, 10);
             $byDay[$dateKey][] = $t;
         }
@@ -1244,16 +1266,23 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         $out = [];
         foreach ($pages as $p) {
+            if (!$this->pageHasAuditField($p, $root)) continue;
             if (!$this->auditValueIsEmpty($this->auditDotValue($p, $field))) continue;
             $out[] = [
                 'id'       => $p->id,
-                'title'    => $p->title,
+                'title'    => $this->pageTitleForDisplay($p),
                 'template' => (string)$p->template,
                 'edit'     => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
                 'url'      => $p->url,
             ];
         }
         return ['pages' => $out, 'total' => count($out)];
+    }
+
+    protected function pageHasAuditField(Page $page, string $field): bool {
+        if (in_array($field, ['id', 'name', 'title', 'url'], true)) return true;
+        if (method_exists($page, 'hasField')) return (bool)$page->hasField($field);
+        return (bool)$page->template->fieldgroup->hasField($field);
     }
 
     public function getAuditExportResults(array $rule): array {
@@ -2492,6 +2521,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $editor->attr('id', 'vk-editor-' . str_replace('_', '-', $name));
         $editor->val($value);
         $editor->height = $height;
+        $editor->plugins = 'lists link';
         $editor->toolbar = 'undo redo | bold italic | bullist numlist | link | removeformat';
         $editor->menubar = '';
         $editor->renderReady();

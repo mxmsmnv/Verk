@@ -19,6 +19,7 @@ $today   = date('Y-m-d');
 $adminUrl = $this->wire('config')->urls->admin;
 $backUrl  = $url . '?view=task-edit&id=' . ($t['id'] ?? 0) . ($returnUrl ? '&return_url=' . rawurlencode($returnUrl) : '');
 $layoutClass = $isEdit ? 'vk-task-layout vk-task-workspace has-sidebar' : 'vk-task-layout vk-task-create';
+$linkedPageTitle = $linkedPage ? $this->pageTitleForDisplay($linkedPage) : '';
 $assigneeName = __('Unassigned');
 foreach ($users as $taskUser) {
     if ((int)$taskUser['id'] === (int)($t['assignee_id'] ?? 0)) {
@@ -90,7 +91,7 @@ ob_start();
             <div><dt><?= __('Sprint') ?></dt><dd><?= htmlspecialchars($sprintName) ?></dd></div>
             <div><dt><?= __('Estimate') ?></dt><dd><?= !empty($t['estimate_h']) ? htmlspecialchars((string)$t['estimate_h']) . 'h' : __('Not set') ?></dd></div>
             <div><dt><?= __('Story points') ?></dt><dd><?= !empty($t['story_points']) ? (int)$t['story_points'] : '&mdash;' ?></dd></div>
-            <div><dt><?= __('Linked page') ?></dt><dd><?= $linkedPage ? htmlspecialchars($linkedPage->title) : __('None') ?></dd></div>
+            <div><dt><?= __('Linked page') ?></dt><dd><?= $linkedPage ? htmlspecialchars($linkedPageTitle) : __('None') ?></dd></div>
         </dl>
     </div>
 </section>
@@ -122,7 +123,7 @@ ob_start();
                             <div class="vk-picker" id="vk-picker">
                                 <input type="text" id="vk-picker-input" class="uk-input"
                                     placeholder="<?= __('Search pages by title…') ?>"
-                                    value="<?= $linkedPage ? htmlspecialchars($linkedPage->title) : '' ?>"
+                                    value="<?= $linkedPage ? htmlspecialchars($linkedPageTitle) : '' ?>"
                                     autocomplete="off">
                                 <input type="hidden" name="page_id" id="vk-page-id" value="<?= (int)$t['page_id'] ?>">
                                 <div class="vk-picker-results" id="vk-picker-results"></div>
@@ -130,11 +131,13 @@ ob_start();
                             <?php if ($linkedPage): ?>
                             <div class="vk-inline-actions vk-linked-page-actions">
                                 <a href="<?= $adminUrl ?>page/edit/?id=<?= $linkedPage->id ?>" class="vk-chip" target="_blank">
-                                    <i class="fa fa-pencil-square-o"></i> <?= __('Edit:') ?> <?= htmlspecialchars($linkedPage->title) ?>
+                                    <i class="fa fa-pencil-square-o"></i> <?= __('Edit:') ?> <?= htmlspecialchars($linkedPageTitle) ?>
                                 </a>
+                                <?php if ($linkedPage->viewable()): ?>
                                 <a href="<?= $linkedPage->httpUrl() ?>" class="vk-chip" target="_blank">
                                     <i class="fa fa-external-link"></i> <?= __('View on site') ?>
                                 </a>
+                                <?php endif; ?>
                                 <button type="button" onclick="document.getElementById('vk-page-id').value='';document.getElementById('vk-picker-input').value='';this.closest('div').querySelectorAll('.vk-chip').forEach(e=>e.remove());" class="uk-button uk-button-default uk-button-small"><i class="fa fa-times"></i> <?= __('Clear') ?></button>
                             </div>
                             <?php endif; ?>
@@ -221,7 +224,7 @@ ob_start();
                                     <label class="uk-form-label"><?= __('Estimate') ?> <span class="vk-inline-note"><?= __('(hours)') ?></span></label>
                                     <select name="estimate_h" class="uk-select">
                                         <option value="">&mdash;</option>
-                                        <?php foreach ([2, 4, 8] as $h): ?>
+                                        <?php foreach ([1, 2, 4, 6, 8, 12, 16, 24, 32, 40] as $h): ?>
                                         <option value="<?= $h ?>" <?= ($t['estimate_h'] ?? '') == $h ? 'selected' : '' ?>><?= $h ?>h<?= $h === 4 ? ' ' . __('(default)') : '' ?></option>
                                         <?php endforeach; ?>
                                     </select>

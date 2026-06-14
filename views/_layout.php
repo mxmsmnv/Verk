@@ -309,7 +309,7 @@ body.dark-theme .vk-shell {
 
 .vk-stat-n.is-warning,
 .vk-audit-count.is-warning {
-    color: var(--pw-alert-warning);
+    color: color-mix(in srgb, var(--pw-alert-warning) 52%, var(--vk-text));
 }
 
 .vk-stat-n.is-danger {
@@ -2200,7 +2200,7 @@ body.dark-theme .vk-shell {
 .vk-task-workspace {
     display: grid;
     gap: 16px;
-    grid-template-columns: minmax(0, 780px) minmax(320px, 380px);
+    grid-template-columns: minmax(0, 760px) minmax(360px, 440px);
 }
 
 .vk-task-main,
