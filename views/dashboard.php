@@ -147,9 +147,9 @@ ob_start();
                             <?php if ($t['due_date']): ?><span class="<?= $t['due_date'] < $today ? 'is-overdue' : '' ?>"><?= htmlspecialchars($t['due_date']) ?></span><?php endif; ?>
                             <?php if ($t['due_date']): ?><span class="vk-quarter-inline"><?= htmlspecialchars($this->quarterLabelForDate($t['due_date'])) ?></span><?php endif; ?>
                         </div>
-                        <?php if (!empty($t['linked_page'])): ?>
+                        <?php if (!empty($t['linked_page_title'])): ?>
                         <a href="<?= $t['linked_page_edit'] ?>" class="vk-chip" target="_blank">
-                            <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars($t['linked_page']->title) ?>
+                            <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars((string)$t['linked_page_title']) ?>
                         </a>
                         <?php endif; ?>
                     </div>
@@ -241,12 +241,12 @@ ob_start();
                         <a href="<?= $url ?>?view=task-edit&id=<?= (int)$t['id'] ?>&return_url=<?= $dashboardReturnParam ?>" class="vk-mini-title"><?= htmlspecialchars($t['title']) ?></a>
                         <div class="vk-mini-meta">
                             <span><?= __('TASK') ?>-<?= (int)$t['id'] ?></span>
-                            <?php if (!empty($t['linked_page'])): ?><span><?= htmlspecialchars($t['linked_page']->title) ?></span><?php endif; ?>
+                            <?php if (!empty($t['linked_page_title'])): ?><span><?= htmlspecialchars((string)$t['linked_page_title']) ?></span><?php endif; ?>
                             <?php if ($t['due_date']): ?><span class="vk-quarter-inline"><?= htmlspecialchars($this->quarterLabelForDate($t['due_date'])) ?></span><?php endif; ?>
                         </div>
-                        <?php if (!empty($t['linked_page'])): ?>
+                        <?php if (!empty($t['linked_page_title'])): ?>
                         <a href="<?= $t['linked_page_edit'] ?>" class="vk-chip" target="_blank">
-                            <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars(mb_strimwidth($t['linked_page']->title, 0, 34, '...')) ?>
+                            <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars(mb_strimwidth((string)$t['linked_page_title'], 0, 34, '...')) ?>
                         </a>
                         <?php endif; ?>
                     </div>

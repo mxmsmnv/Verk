@@ -48,7 +48,7 @@ Tasks are linked to PW Pages. Sprints group delivery work by week, month, or qua
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.1` is published as module version `121`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.2` is published as module version `122`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
 
 ## Versioning
 

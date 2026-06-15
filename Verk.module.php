@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> https://smnv.org
  * @license MIT
- * @version 121
+ * @version 122
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -19,7 +19,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 121,
+            'version'  => 122,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov <maxim@smnv.org> https://smnv.org',
             'icon'     => 'dashboard',
@@ -118,6 +118,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public function hookPageEditWidget(HookEvent $event): void {
         $cfg = $this->getConfig();
         if (empty($cfg['page_widget_enabled'])) return;
+        if (!$this->shouldRenderPageEditWidget()) return;
 
         $form    = $event->return;
         $page    = $event->object->getPage();
@@ -217,6 +218,15 @@ class Verk extends Process implements Module, ConfigurableModule {
         } else {
             $form->prepend($field);
         }
+    }
+
+    protected function shouldRenderPageEditWidget(): bool {
+        $input = $this->wire('input');
+        foreach (['field', 'fields', 'field_id', 'file', 'filename', 'InputfieldFileAjax', 'InputfieldImageAjax'] as $key) {
+            $value = $input->get($key);
+            if ($value !== null && $value !== '') return false;
+        }
+        return true;
     }
 
     // -------------------------------------------------------------------------

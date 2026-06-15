@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2] - 2026-06-15
+
+### Fixed
+- Page Editor Widget no longer appears in field-scoped PageEdit dialogs such as ProcessImageLibrary image/file edit modals.
+- Dashboard linked-page labels now use the null-safe enriched page title to avoid PHP 8.1+ deprecation warnings.
+- Module version bumped to `122` so ProcessWire detects the `1.2.2` patch upgrade.
+
 ## [1.2.1] - 2026-06-14
 
 ### Changed
