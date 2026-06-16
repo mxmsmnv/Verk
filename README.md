@@ -4,6 +4,10 @@ Site operations layer for ProcessWire. Not a generic PM — a tool built around 
 
 Tasks are linked to PW Pages. Sprints group delivery work by week, month, or quarter. The Editorial Calendar reads real page date fields and task due dates. Content Audit runs PW selectors with field-path checks. Everything stays inside your PW install.
 
+**Author:** Maxim Semenov  
+**Website:** [smnv.org](https://smnv.org)  
+**Email:** [maxim@smnv.org](mailto:maxim@smnv.org)
+
 If this project helps your work, consider supporting future development: [GitHub Sponsors](https://github.com/sponsors/mxmsmnv) or [smnv.org/sponsor](https://smnv.org/sponsor/).
 
 ## What it does

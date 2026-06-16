@@ -8,7 +8,7 @@ require_once __DIR__ . '/VerkExportService.php';
  * Site operations layer for ProcessWire.
  * Tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.
  *
- * @author  Maxim Semenov <maxim@smnv.org> https://smnv.org
+ * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
  * @version 122
  */
