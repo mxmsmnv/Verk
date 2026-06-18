@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 123
+ * @version 130
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -19,7 +19,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 123,
+            'version'  => 130,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -60,6 +60,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             'page_widget_show_due_date' => 1,
             'page_widget_show_quarter' => 1,
             'page_widget_show_assignee' => 1,
+            'assignee_roles' => '',
         ];
     }
 
@@ -538,13 +539,13 @@ class Verk extends Process implements Module, ConfigurableModule {
         $stmt->execute($params);
         $tasks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        $userMap = $this->getUserMap();
+        $userMap = $this->getUserMap(array_column($tasks, 'assignee_id'));
         foreach ($tasks as &$t) {
             $t['assignee_name'] = $userMap[(int)$t['assignee_id']] ?? null;
         }
         unset($t);
         $tasks   = $this->enrichTaskPagesBatch($tasks);
-        $users   = $this->getAllUsers();
+        $users   = $this->getAllUsers($assigneeId > 0 ? [$assigneeId] : []);
         $sprints = $this->getAllSprints();
         $currentAssigneeId = $assigneeId;
         $currentSprintId = $sprintId;
@@ -569,7 +570,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             );
             $stmt->execute([':tid' => $id]);
             $task['comments'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            $userMap = $this->getUserMap();
+            $userMap = $this->getUserMap(array_column($task['comments'], 'user_id'));
             foreach ($task['comments'] as &$c) {
                 $c['author_name'] = $userMap[(int)$c['user_id']] ?? '?';
             }
@@ -583,6 +584,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             );
             $tlStmt->execute([':tid' => $id]);
             $task['time_logs'] = $tlStmt->fetchAll(\PDO::FETCH_ASSOC);
+            $userMap += $this->getUserMap(array_column($task['time_logs'], 'user_id'));
             foreach ($task['time_logs'] as &$tl) {
                 $tl['user_name'] = $userMap[(int)$tl['user_id']] ?? '?';
             }
@@ -598,7 +600,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             if ($lp->id) $linkedPage = $lp;
         }
 
-        $users = $this->getAllUsers();
+        $users = $this->getAllUsers(!empty($task['assignee_id']) ? [(int)$task['assignee_id']] : []);
         ob_start(); require __DIR__ . '/views/task-form.php'; return ob_get_clean();
     }
 
@@ -678,7 +680,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($calendarAssigneeId > 0) $calendarStatsParams[':assignee_id'] = $calendarAssigneeId;
         $stmt->execute($calendarStatsParams);
         $calendarPlanStats = array_merge($calendarPlanStats, array_map('intval', $stmt->fetch(\PDO::FETCH_ASSOC) ?: []));
-        $calendarUsers = $this->getAllUsers();
+        $calendarUsers = $this->getAllUsers($calendarAssigneeId > 0 ? [$calendarAssigneeId] : []);
         ob_start(); require __DIR__ . '/views/calendar.php'; return ob_get_clean();
     }
 
@@ -1001,6 +1003,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             'page_widget_show_due_date' => $has('page_widget_show_due_date') ? (int)(bool)$input->post('page_widget_show_due_date') : (int)$current['page_widget_show_due_date'],
             'page_widget_show_quarter' => $has('page_widget_show_quarter') ? (int)(bool)$input->post('page_widget_show_quarter') : (int)$current['page_widget_show_quarter'],
             'page_widget_show_assignee' => $has('page_widget_show_assignee') ? (int)(bool)$input->post('page_widget_show_assignee') : (int)$current['page_widget_show_assignee'],
+            'assignee_roles' => $has('assignee_roles') ? $this->sanRoleList((string)$input->post('assignee_roles')) : (string)($current['assignee_roles'] ?? ''),
         ]);
         $this->message($this->_('Settings saved.'));
         $this->redirect('settings');
@@ -1205,7 +1208,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         );
         $stmt->execute($params);
         $tasks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $userMap = $this->getUserMap();
+        $userMap = $this->getUserMap(array_column($tasks, 'assignee_id'));
 
         $byDay = [];
         foreach ($tasks as $t) {
@@ -1411,13 +1414,58 @@ class Verk extends Process implements Module, ConfigurableModule {
         return array_merge(self::getDefaultConfig(), is_array($saved) ? $saved : []);
     }
 
-    public function getAllUsers(): array {
+    public function getAllUsers(array $includeUserIds = []): array {
         $out = [];
-        $guestId = (int)$this->wire('config')->guestUserPageID;
-        foreach ($this->wire('users')->find("id!=$guestId, sort=name, limit=500") as $u) {
-            $out[] = ['id' => $u->id, 'name' => $u->name, 'email' => $u->email];
+        foreach ($this->findAssignableUsers($includeUserIds) as $u) {
+            $out[(int)$u->id] = ['id' => $u->id, 'name' => $u->name, 'email' => $u->email];
         }
-        return $out;
+        uasort($out, fn(array $a, array $b): int => strcasecmp((string)$a['name'], (string)$b['name']));
+        return array_values($out);
+    }
+
+    protected function sanRoleList(string $value): string {
+        $roles = [];
+        foreach (array_filter(array_map('trim', explode(',', $value))) as $roleName) {
+            $roleName = preg_replace('/[^A-Za-z0-9_-]/', '', $roleName) ?? '';
+            if ($roleName === '') continue;
+            $role = $this->wire('roles')->get($roleName);
+            if ($role && $role->id) $roles[$roleName] = $roleName;
+        }
+        return implode(', ', array_values($roles));
+    }
+
+    protected function assigneeRoleNames(): array {
+        $cfg = $this->getConfig();
+        $roles = [];
+        foreach (array_filter(array_map('trim', explode(',', (string)($cfg['assignee_roles'] ?? '')))) as $roleName) {
+            $roleName = preg_replace('/[^A-Za-z0-9_-]/', '', $roleName) ?? '';
+            if ($roleName !== '') $roles[$roleName] = $roleName;
+        }
+        return array_values($roles);
+    }
+
+    protected function findAssignableUsers(array $includeUserIds = []): array {
+        $users = $this->wire('users');
+        $guestId = (int)$this->wire('config')->guestUserPageID;
+        $selectorParts = ["id!=$guestId"];
+        $roleNames = $this->assigneeRoleNames();
+        if ($roleNames) {
+            $selectorParts[] = 'roles=' . implode('|', $roleNames);
+        }
+
+        $out = [];
+        foreach ($users->find(implode(', ', $selectorParts) . ', sort=name, limit=500') as $u) {
+            $out[(int)$u->id] = $u;
+        }
+
+        foreach (array_unique(array_filter(array_map('intval', $includeUserIds))) as $userId) {
+            if ($userId === $guestId || isset($out[$userId])) continue;
+            $u = $users->get($userId);
+            if ($u && $u->id && (int)$u->id !== $guestId) $out[(int)$u->id] = $u;
+        }
+
+        uasort($out, fn($a, $b): int => strcasecmp((string)$a->name, (string)$b->name));
+        return array_values($out);
     }
 
     // Translated display labels for the status/priority enums (shared by views).
@@ -1822,7 +1870,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         );
         $stmt->execute([':sid' => $sprintId]);
         $tasks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $userMap = $this->getUserMap();
+        $userMap = $this->getUserMap(array_column($tasks, 'assignee_id'));
         $returnUrl = $this->page->url . '?view=sprint-edit&id=' . $sprintId . '#vk-sprint-tasks';
         foreach ($tasks as &$t) {
             $t['assignee_name'] = $userMap[(int)$t['assignee_id']] ?? null;
@@ -2512,11 +2560,22 @@ class Verk extends Process implements Module, ConfigurableModule {
         return $u && $u->id !== 0;
     }
 
-    protected function getUserMap(): array {
+    protected function getUserMap(array $userIds = []): array {
         $map = [];
         $guestId = (int)$this->wire('config')->guestUserPageID;
-        foreach ($this->wire('users')->find("id!=$guestId, sort=name, limit=500") as $u) {
-            $map[$u->id] = $u->name;
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+
+        if ($userIds) {
+            foreach ($userIds as $userId) {
+                if ($userId === $guestId) continue;
+                $u = $this->wire('users')->get($userId);
+                if ($u && $u->id) $map[(int)$u->id] = $u->name;
+            }
+            return $map;
+        }
+
+        foreach ($this->findAssignableUsers() as $u) {
+            $map[(int)$u->id] = $u->name;
         }
         return $map;
     }

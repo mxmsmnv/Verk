@@ -24,12 +24,20 @@ foreach ($this->wire('fields') as $f) {
 }
 sort($dateFields);
 
+$allRoles = [];
+foreach ($this->wire('roles') as $role) {
+    if ($role->name === 'guest') continue;
+    $allRoles[] = $role->name;
+}
+sort($allRoles);
+
 $calendarTemplates = array_values(array_filter(array_map('trim', explode(',', (string)$cfg['calendar_template']))));
 $calendarDateField = trim((string)$cfg['calendar_date_field']);
 $calendarReady = $calendarTemplates && $calendarDateField;
 $calendarStatus = $calendarReady ? __('Configured') : __('Needs setup');
 $calendarStatusClass = $calendarReady ? 'vk-label-done' : 'vk-label-open';
 $quarterStartMonth = max(1, min(12, (int)($cfg['quarter_start_month'] ?? 1)));
+$assigneeRoles = trim((string)($cfg['assignee_roles'] ?? ''));
 $widgetEnabled = !empty($cfg['page_widget_enabled']);
 $widgetStatus = $widgetEnabled ? __('Enabled') : __('Disabled');
 $widgetStatusClass = $widgetEnabled ? 'vk-label-done' : 'vk-label-open';
@@ -169,6 +177,37 @@ ob_start();
                     <div><i class="fa fa-check"></i> <?= __('Creates tasks from audit results') ?></div>
                 </div>
                 <a href="<?= $url ?>?view=audit" class="uk-button uk-button-default"><i class="fa fa-search"></i> <?= __('Open Audit') ?></a>
+            </div>
+        </div>
+
+        <div class="uk-card uk-card-default vk-settings-card">
+            <div class="uk-card-header">
+                <h3 class="vk-card-title"><?= __('Task Assignment') ?></h3>
+                <span class="vk-settings-card-note"><?= $assigneeRoles ? htmlspecialchars($assigneeRoles) : __('All non-guest users') ?></span>
+            </div>
+            <div class="uk-card-body">
+                <p class="vk-settings-intro"><?= __('Limit assignee dropdowns and filters to ProcessWire users with selected roles. Existing task assignees remain visible when editing or filtering those tasks.') ?></p>
+                <form method="post" action="<?= $url ?>">
+                    <input type="hidden" name="<?= $csrfN ?>" value="<?= $csrf ?>">
+                    <input type="hidden" name="action" value="save_settings">
+
+                    <div class="vk-field">
+                        <label class="uk-form-label"><?= __('Assignee roles') ?> <span class="vk-inline-note"><?= __('(comma-separated)') ?></span></label>
+                        <input type="text" name="assignee_roles"
+                            value="<?= htmlspecialchars($assigneeRoles) ?>"
+                            placeholder="<?= __('e.g. editor, superuser') ?>"
+                            class="uk-input"
+                            list="vk-assignee-roles-list">
+                        <div class="vk-field-help"><?= __('Leave empty to allow every non-guest user. Use role names, not labels.') ?></div>
+                        <datalist id="vk-assignee-roles-list">
+                            <?php foreach ($allRoles as $roleName): ?><option value="<?= htmlspecialchars($roleName) ?>"><?php endforeach; ?>
+                        </datalist>
+                    </div>
+
+                    <div class="vk-form-actions">
+                        <button type="submit" class="uk-button uk-button-primary"><?= __('Save Assignment') ?></button>
+                    </div>
+                </form>
             </div>
         </div>
 

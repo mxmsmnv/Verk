@@ -20,7 +20,7 @@ If this project helps your work, consider supporting future development: [GitHub
 | **Content Audit** | Run PW selectors and dot-notation field checks to find missing content |
 | **Knowledge Base** | Rich editorial notes organized by category, searchable and exportable |
 | **Sprints** | Sprint planning, quarter grouping, task assignment, DOCX export, and progress tracking |
-| **Settings** | Calendar source, fiscal quarter start, and configurable Page Editor Widget |
+| **Settings** | Calendar source, fiscal quarter start, assignee role scope, and configurable Page Editor Widget |
 
 ## Key features
 
@@ -28,6 +28,7 @@ If this project helps your work, consider supporting future development: [GitHub
 - **Edit in PW** — every task with a linked page shows a direct `/admin/page/edit/?id=X` button
 - **View on site** — opens the front-end URL in a new tab
 - **Page Editor Widget** — Verk injects a configurable task widget into ProcessPageEdit, with live settings preview
+- **Assignee role scope** — optionally keep task assignee dropdowns and filters limited to selected ProcessWire roles
 - **Audit to tasks** — create one task or bulk tasks from audit results; page context is prefilled
 - **Calendar** — configurable publication source plus task due dates in month, week, and quarter views
 - **Quarter planning** — fiscal quarter start month, sprint quarter filters, date planning helpers, and quarter labels on tasks
@@ -50,11 +51,12 @@ If this project helps your work, consider supporting future development: [GitHub
    - Calendar template(s)
    - Calendar date field
    - Quarter start month
+   - Optional assignee roles
    - Page Editor Widget display options
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.2.3` is published as module version `123`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.3.0` is published as module version `130`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact.
 
 ## Versioning
 
