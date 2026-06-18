@@ -3327,7 +3327,16 @@ body.dark-theme .vk-shell {
 }
 
 .vk-note-form textarea.uk-textarea {
-    min-height: 150px !important;
+    min-height: 260px !important;
+}
+
+.vk-note-editor .tox-tinymce {
+    height: 360px !important;
+    min-height: 260px;
+}
+
+.vk-note-editor textarea.vk-tinymce-editor {
+    min-height: 260px !important;
 }
 
 .vk-form-section {

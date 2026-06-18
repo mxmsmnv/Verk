@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 122
+ * @version 123
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -19,9 +19,10 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 122,
+            'version'  => 123,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
-            'author'   => 'Maxim Semenov <maxim@smnv.org> https://smnv.org',
+            'author'   => 'Maxim Semenov',
+            'href'     => 'https://smnv.org',
             'icon'     => 'dashboard',
             'singular' => true,
             'autoload' => true,
