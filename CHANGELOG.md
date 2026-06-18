@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.3] - 2026-06-18
+
+### Changed
+- Knowledge Base note editor now opens taller by default so longer notes are easier to edit when TinyMCE resizing is unavailable.
+- Module version bumped to `123` so ProcessWire detects the `1.2.3` patch upgrade.
+
 ## [1.2.2] - 2026-06-15
 
 ### Fixed

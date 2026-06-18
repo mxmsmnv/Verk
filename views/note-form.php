@@ -92,8 +92,8 @@ ob_start();
 
                 <div class="vk-field">
                     <label class="uk-form-label"><?= __('Content') ?></label>
-                    <div class="vk-rich-editor">
-                        <?= $this->renderRichTextEditor('body', (string)$n['body'], 240) ?>
+                    <div class="vk-rich-editor vk-note-editor">
+                        <?= $this->renderRichTextEditor('body', (string)$n['body'], 360) ?>
                     </div>
                 </div>
 
