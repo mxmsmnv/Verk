@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0] - 2026-06-18
+
+### Added
+- Task assignment can now be scoped to selected ProcessWire roles so assignee dropdowns and filters stay manageable on sites with large frontend user bases.
+
+### Changed
+- Assignee name lookups now load only referenced users instead of scanning broad user lists.
+- Module version bumped to `130` so ProcessWire detects the `1.3.0` minor upgrade.
+
 ## [1.2.3] - 2026-06-18
 
 ### Changed
