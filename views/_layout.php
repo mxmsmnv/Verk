@@ -3314,7 +3314,7 @@ body.dark-theme .vk-shell {
 }
 
 .vk-sprint-editor .tox-tinymce {
-    height: 220px !important;
+    min-height: 220px;
 }
 
 .vk-sprint-editor textarea.vk-tinymce-editor {
@@ -3331,8 +3331,7 @@ body.dark-theme .vk-shell {
 }
 
 .vk-note-editor .tox-tinymce {
-    height: 360px !important;
-    min-height: 260px;
+    min-height: 360px;
 }
 
 .vk-note-editor textarea.vk-tinymce-editor {
