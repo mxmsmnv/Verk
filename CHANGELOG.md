@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.2] - 2026-06-18
+
+### Fixed
+- Verk TinyMCE editors now override the Insert menu as well as the toolbar, so ProcessWire image picker actions are not exposed without page/image-field context.
+- Module version bumped to `132` so ProcessWire detects the `1.3.2` patch upgrade.
+
 ## [1.3.1] - 2026-06-18
 
 ### Fixed
