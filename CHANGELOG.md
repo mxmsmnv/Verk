@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.3] - 2026-06-18
+
+### Fixed
+- Standalone Verk TinyMCE editors now render the ProcessWire `.InputfieldTinyMCE` wrapper with `data-settings`, so height/resize/menu settings are actually available to `InputfieldTinyMCE.js`.
+- Module version bumped to `133` so ProcessWire detects the `1.3.3` patch upgrade.
+
 ## [1.3.2] - 2026-06-18
 
 ### Fixed
