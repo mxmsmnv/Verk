@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 132
+ * @version 133
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -19,7 +19,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 132,
+            'version'  => 133,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -2593,8 +2593,17 @@ class Verk extends Process implements Module, ConfigurableModule {
         $editor->val($value);
         $editor->height = $height;
         $editor->features = ['toolbar', 'menubar', 'statusbar', 'stickybars', 'purifier', 'pasteFilter'];
-        $editor->settingsJSON = json_encode([
-            'height' => $height,
+        $settings = $this->tinyMceSettings($height);
+        $editor->settingsJSON = json_encode($settings);
+        $editor->renderReady();
+        return '<div class="Inputfield InputfieldTinyMCE vk-tinymce-inputfield" data-configName="default" data-features="pasteFilter" data-settings="'
+            . htmlspecialchars(json_encode($settings), ENT_QUOTES, 'UTF-8')
+            . '">' . $editor->render() . '</div>';
+    }
+
+    protected function tinyMceSettings(int $height): array {
+        return [
+            'height' => $height . 'px',
             'resize' => true,
             'plugins' => 'anchor code link lists table',
             'toolbar' => 'styles bold italic link blockquote hr bullist numlist table code',
@@ -2608,9 +2617,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 'tools' => ['title' => 'Tools', 'items' => 'code'],
             ],
             'contextmenu' => 'link unlink lists table removeformat',
-        ]);
-        $editor->renderReady();
-        return $editor->render();
+        ];
     }
 
     public function renderRichText(string $value): string {
