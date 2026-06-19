@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1] - 2026-06-18
+
+### Fixed
+- Rich-text editors now pass height and resize behavior through ProcessWire's `InputfieldTinyMCE` settings instead of forcing TinyMCE container height with CSS, so the Knowledge Base editor no longer collapses after initialization and the resize handle can work.
+- Module version bumped to `131` so ProcessWire detects the `1.3.1` patch upgrade.
+
 ## [1.3.0] - 2026-06-18
 
 ### Added
