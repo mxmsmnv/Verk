@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 131
+ * @version 132
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -19,7 +19,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 131,
+            'version'  => 132,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -2599,6 +2599,14 @@ class Verk extends Process implements Module, ConfigurableModule {
             'plugins' => 'anchor code link lists table',
             'toolbar' => 'styles bold italic link blockquote hr bullist numlist table code',
             'menubar' => 'edit view insert format table tools',
+            'menu' => [
+                'edit' => ['title' => 'Edit', 'items' => 'undo redo | cut copy paste pastetext | selectall'],
+                'view' => ['title' => 'View', 'items' => 'code'],
+                'insert' => ['title' => 'Insert', 'items' => 'link anchor | hr inserttable'],
+                'format' => ['title' => 'Format', 'items' => 'bold italic underline strikethrough | blocks | removeformat'],
+                'table' => ['title' => 'Table', 'items' => 'inserttable | cell row column | tableprops deletetable'],
+                'tools' => ['title' => 'Tools', 'items' => 'code'],
+            ],
             'contextmenu' => 'link unlink lists table removeformat',
         ]);
         $editor->renderReady();
