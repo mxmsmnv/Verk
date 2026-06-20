@@ -2,6 +2,8 @@
 
 Site operations layer for ProcessWire. Not a generic PM — a tool built around PW's data model.
 
+![Verk](assets/Verk.png)
+
 Tasks are linked to PW Pages. Sprints group delivery work by week, month, or quarter. The Editorial Calendar reads real page date fields and task due dates. Content Audit runs PW selectors with field-path checks. Everything stays inside your PW install.
 
 **Author:** Maxim Semenov  
