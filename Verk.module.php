@@ -171,11 +171,14 @@ class Verk extends Process implements Module, ConfigurableModule {
             .verk-page-widget__name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
             .verk-page-widget__meta{color:var(--pw-muted-color);font-size:.74rem;text-align:right;white-space:nowrap}
             .verk-page-widget__empty{color:var(--pw-muted-color);font-size:.82rem}
-            .verk-page-widget__audit{display:grid;gap:5px;margin-top:2px}
-            .verk-page-widget__audit-head{color:var(--pw-muted-color);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase}
-            .verk-page-widget__gap{border:1px solid var(--pw-border-color);border-left:3px solid var(--pw-alert-warning);border-radius:4px;display:grid;gap:2px;padding:6px 8px}
-            .verk-page-widget__gap-label{color:var(--pw-text-color);font-size:.82rem}
-            .verk-page-widget__gap-msg{color:var(--pw-muted-color);font-size:.74rem}
+            .verk-page-widget__audit{display:grid;gap:6px;margin-top:12px}
+            .verk-page-widget__audit-head{align-items:center;color:var(--pw-muted-color);display:flex;font-size:.7rem;font-weight:600;gap:7px;letter-spacing:.05em;text-transform:uppercase}
+            .verk-page-widget__audit-count{align-items:center;background:var(--pw-alert-warning);border-radius:999px;color:color-mix(in srgb,var(--pw-alert-warning) 25%,var(--pw-text-color));display:inline-flex;font-size:.66rem;font-weight:600;justify-content:center;line-height:1;min-width:17px;padding:3px 6px}
+            .verk-page-widget__gap{align-items:center;background:color-mix(in srgb,var(--pw-alert-warning) 14%,var(--pw-content-background));border:1px solid color-mix(in srgb,var(--pw-alert-warning) 45%,var(--pw-border-color));border-left:3px solid color-mix(in srgb,var(--pw-alert-warning) 60%,var(--pw-text-color));border-radius:4px;display:grid;gap:9px;grid-template-columns:auto minmax(0,1fr);padding:8px 11px}
+            .verk-page-widget__gap-icon{color:color-mix(in srgb,var(--pw-alert-warning) 50%,var(--pw-text-color));font-size:.9rem;line-height:1}
+            .verk-page-widget__gap-text{display:grid;gap:1px;min-width:0}
+            .verk-page-widget__gap-label{color:var(--pw-text-color);font-size:.82rem;font-weight:500}
+            .verk-page-widget__gap-msg{color:var(--pw-muted-color);font-size:.74rem;line-height:1.3}
         </style>';
         $html .= '<div class="verk-page-widget">';
         $html .= '<div class="verk-page-widget__head">';
@@ -216,13 +219,18 @@ class Verk extends Process implements Module, ConfigurableModule {
         $gaps = $this->getPageAuditGaps($page);
         if ($gaps) {
             $html .= '<div class="verk-page-widget__audit">';
-            $html .= '<span class="verk-page-widget__audit-head">' . $this->_('Audit gaps') . '</span>';
+            $html .= '<span class="verk-page-widget__audit-head">' . $this->_('Audit gaps')
+                . '<span class="verk-page-widget__audit-count">' . count($gaps) . '</span></span>';
             foreach ($gaps as $gap) {
                 $html .= '<div class="verk-page-widget__gap">';
+                $html .= '<i class="fa fa-flag-o verk-page-widget__gap-icon" aria-hidden="true"></i>';
+                $html .= '<span class="verk-page-widget__gap-text">';
                 $html .= '<span class="verk-page-widget__gap-label">' . $sanitizer->entities($gap['label']) . '</span>';
-                if ($gap['message'] !== '') {
+                // Only show the message when it adds something beyond the label.
+                if ($gap['message'] !== '' && strcasecmp(trim($gap['message']), trim($gap['label'])) !== 0) {
                     $html .= '<span class="verk-page-widget__gap-msg">' . $sanitizer->entities($gap['message']) . '</span>';
                 }
+                $html .= '</span>';
                 $html .= '</div>';
             }
             $html .= '</div>';
