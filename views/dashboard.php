@@ -185,12 +185,12 @@ ob_start();
             </div>
             <div class="uk-card-body vk-card-body-flush">
                 <?php foreach ($auditSummary as $a): ?>
-                <div class="vk-audit-item">
+                <a href="<?= $url ?>?view=audit&rule=<?= $a['index'] ?>" class="vk-audit-item">
                     <span class="vk-audit-item-label"><?= htmlspecialchars($a['label']) ?></span>
-                    <a href="<?= $url ?>?view=audit&rule=<?= $a['index'] ?>" class="vk-audit-count <?= $a['count'] > 0 ? 'is-warning' : 'is-success' ?>">
+                    <span class="vk-audit-count <?= $a['count'] > 0 ? 'is-warning' : 'is-success' ?>">
                         <?= sprintf(__('%d pages'), $a['count']) ?>
-                    </a>
-                </div>
+                    </span>
+                </a>
                 <?php endforeach; ?>
             </div>
         </div>

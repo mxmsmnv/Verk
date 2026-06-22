@@ -552,10 +552,15 @@ body.dark-theme .vk-shell {
     padding:.58rem .85rem;
     border-bottom:1px solid var(--vk-border);
     font-size:.86rem;
+    color: inherit;
+    text-decoration: none;
 }
 
-.vk-audit-item:hover {
+.vk-audit-item:hover,
+.vk-audit-item:focus {
     background:var(--vk-muted-surface);
+    color: inherit;
+    text-decoration: none;
 }
 
 .vk-audit-item:last-child {
@@ -5118,6 +5123,14 @@ a.vk-sprint-summary-card.is-active {
     color: var(--vk-muted);
     font-size: 1.7rem;
     margin-bottom: 10px;
+}
+
+/* The decorative-icon sizing above must not bleed onto button icons
+   inside the empty-state actions; keep those matching normal buttons. */
+.vk-empty-actions .uk-button .fa {
+    color: inherit;
+    font-size: inherit;
+    margin-bottom: 0;
 }
 
 .vk-empty-icon {
