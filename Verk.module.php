@@ -171,6 +171,11 @@ class Verk extends Process implements Module, ConfigurableModule {
             .verk-page-widget__name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
             .verk-page-widget__meta{color:var(--pw-muted-color);font-size:.74rem;text-align:right;white-space:nowrap}
             .verk-page-widget__empty{color:var(--pw-muted-color);font-size:.82rem}
+            .verk-page-widget__audit{display:grid;gap:5px;margin-top:2px}
+            .verk-page-widget__audit-head{color:var(--pw-muted-color);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase}
+            .verk-page-widget__gap{border:1px solid var(--pw-border-color);border-left:3px solid var(--pw-alert-warning);border-radius:4px;display:grid;gap:2px;padding:6px 8px}
+            .verk-page-widget__gap-label{color:var(--pw-text-color);font-size:.82rem}
+            .verk-page-widget__gap-msg{color:var(--pw-muted-color);font-size:.74rem}
         </style>';
         $html .= '<div class="verk-page-widget">';
         $html .= '<div class="verk-page-widget__head">';
@@ -206,6 +211,21 @@ class Verk extends Process implements Module, ConfigurableModule {
             $html .= '</div>';
         } elseif (!empty($cfg['page_widget_show_empty'])) {
             $html .= '<div class="verk-page-widget__empty">' . $this->_('No tasks for this page.') . '</div>';
+        }
+
+        $gaps = $this->getPageAuditGaps($page);
+        if ($gaps) {
+            $html .= '<div class="verk-page-widget__audit">';
+            $html .= '<span class="verk-page-widget__audit-head">' . $this->_('Audit gaps') . '</span>';
+            foreach ($gaps as $gap) {
+                $html .= '<div class="verk-page-widget__gap">';
+                $html .= '<span class="verk-page-widget__gap-label">' . $sanitizer->entities($gap['label']) . '</span>';
+                if ($gap['message'] !== '') {
+                    $html .= '<span class="verk-page-widget__gap-msg">' . $sanitizer->entities($gap['message']) . '</span>';
+                }
+                $html .= '</div>';
+            }
+            $html .= '</div>';
         }
         $html .= '</div>';
 
@@ -1291,6 +1311,34 @@ class Verk extends Process implements Module, ConfigurableModule {
             ];
         }
         return ['pages' => $out, 'total' => count($out)];
+    }
+
+    /**
+     * Audit gaps for a single page, evaluated in memory (no site-wide find).
+     *
+     * Mirrors the per-page test in runAuditRule() but matches the rule's scope
+     * selector against just this page, so it is cheap enough to run on the
+     * page-edit screen. Returns a list of ['label' => ..., 'message' => ...].
+     */
+    protected function getPageAuditGaps(Page $page): array {
+        $gaps = [];
+        foreach ($this->getAuditRules() as $rule) {
+            $rule  = $this->normalizeAuditRule($rule);
+            $field = $rule['field'];
+            $root  = strtok($field, '.');
+            if ($field === '' || (!$this->wire('fields')->get($root) && !in_array($root, ['id', 'name', 'title', 'url'], true))) {
+                continue;
+            }
+            try {
+                if (!$page->matches($rule['selector'])) continue;
+            } catch (\Exception $e) {
+                continue;
+            }
+            if (!$this->pageHasAuditField($page, $root)) continue;
+            if (!$this->auditValueIsEmpty($this->auditDotValue($page, $field))) continue;
+            $gaps[] = ['label' => $rule['label'], 'message' => $rule['message']];
+        }
+        return $gaps;
     }
 
     protected function pageHasAuditField(Page $page, string $field): bool {
