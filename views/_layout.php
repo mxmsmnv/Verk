@@ -552,10 +552,15 @@ body.dark-theme .vk-shell {
     padding:.58rem .85rem;
     border-bottom:1px solid var(--vk-border);
     font-size:.86rem;
+    color: inherit;
+    text-decoration: none;
 }
 
-.vk-audit-item:hover {
+.vk-audit-item:hover,
+.vk-audit-item:focus {
     background:var(--vk-muted-surface);
+    color: inherit;
+    text-decoration: none;
 }
 
 .vk-audit-item:last-child {
