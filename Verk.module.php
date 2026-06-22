@@ -1338,7 +1338,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             $rule  = $this->normalizeAuditRule($rule);
             $field = $rule['field'];
             $root  = strtok($field, '.');
-            if ($field === '' || (!$this->wire('fields')->get($root) && !in_array($root, ['id', 'name', 'title', 'url'], true))) {
+            if ($field !== '' && !$this->wire('fields')->get($root) && !in_array($root, ['id', 'name', 'title', 'url'], true)) {
                 continue;
             }
             try {
@@ -1346,8 +1346,10 @@ class Verk extends Process implements Module, ConfigurableModule {
             } catch (\Exception $e) {
                 continue;
             }
-            if (!$this->pageHasAuditField($page, $root)) continue;
-            if (!$this->auditValueIsEmpty($this->auditDotValue($page, $field))) continue;
+            if ($field !== '') {
+                if (!$this->pageHasAuditField($page, $root)) continue;
+                if (!$this->auditValueIsEmpty($this->auditDotValue($page, $field))) continue;
+            }
             $gaps[] = ['label' => $rule['label'], 'message' => $rule['message']];
         }
         return $gaps;
