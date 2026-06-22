@@ -212,6 +212,8 @@ body.dark-theme .vk-shell {
 
 .vk-shell .uk-button .fa {
     margin-right: 0;
+    position: relative;
+    top: 1px;
 }
 
 .vk-shell .uk-button-danger {
