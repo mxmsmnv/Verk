@@ -923,7 +923,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $db->prepare("DELETE FROM vk_comments WHERE task_id=:id")->execute([':id'=>$id]);
         $db->prepare("DELETE FROM vk_tasks WHERE id=:id")->execute([':id'=>$id]);
         $this->files->deleteForEntity('task', $id);
-        $this->files->deleteForEntity('comment', $id); // comments belong to the task
+        // Comment attachments (Phase 3) are keyed by comment id, not task id;
+        // their cleanup will be handled when comment attachments are added.
         $this->message($this->_('Task deleted.'));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('tasks');
