@@ -3305,6 +3305,152 @@ body.dark-theme .vk-shell {
     color: var(--vk-accent);
 }
 
+/* Reviewers picker (core AsmSelect): strip the PW Inputfield wrapper chrome so
+   the field sits flush like its siblings, and present the chosen reviewers as a
+   compact, neutral list instead of the default full-width admin-colored pill. */
+.vk-reviewers-field .Inputfields,
+.vk-reviewers-field .Inputfield,
+.vk-reviewers-field .InputfieldContent {
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.vk-reviewers-field .InputfieldHeader {
+    display: none !important;
+}
+
+/* The PW grid <li> wrapper (li.Inputfield.InputfieldAsmSelect) carries the
+   admin theme's field border via a UIkit-grid rule too specific for a class
+   override. Target it by id — InputfieldWrapper names the li wrap_<input-id>. */
+#wrap_vk-reviewer-ids {
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.vk-reviewers-field .asmContainer {
+    background: none !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove the box the admin theme draws around the whole picker. It survives
+   the reset above because the theme's rule is more specific, so match it with
+   a higher-specificity selector (.vk-shell prefix). The dropdown and chip keep
+   their own borders. */
+.vk-shell .vk-reviewers-field .Inputfield,
+.vk-shell .vk-reviewers-field .InputfieldContent,
+.vk-shell .vk-reviewers-field .asmContainer,
+.vk-shell .vk-reviewers-field .asmList {
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Keep the picker within its grid column. The workflow section is a
+   3-col grid (minmax(0,1fr)); normal cells get min-width:0, but this
+   standalone field is a direct grid item, so without min-width:0 its
+   default min-width:auto lets the Select2 widget overflow into the next
+   column. Constrain the whole subtree to the track width. */
+.vk-reviewers-field,
+.vk-reviewers-field .Inputfields,
+.vk-reviewers-field .Inputfield,
+.vk-reviewers-field .InputfieldContent,
+.vk-reviewers-field .asmContainer,
+.vk-reviewers-field .asmList,
+.vk-reviewers-field .select2-container,
+.vk-reviewers-field .select2-selection,
+.vk-reviewers-field .select2-selection--single,
+.vk-reviewers-field select.asmSelect {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+/* Match the add-dropdown to the other form selects (muted fill, soft border,
+   rounded). !important beats the admin theme's default select styling. */
+.vk-reviewers-field select.asmSelect {
+    background: var(--vk-muted-surface) !important;
+    border: 1px solid var(--vk-border) !important;
+    border-radius: var(--vk-radius-sm) !important;
+    font-size: .9rem !important;
+    height: 34px !important;
+    margin: 0 !important;
+}
+
+/* The admin theme enhances the add-dropdown with Select2, so the visible
+   control is a .select2 widget (the real <select> is hidden). Style that to
+   match the other form selects: full width (overrides Select2's inline px
+   width), muted fill, soft border, rounded, 34px tall. */
+.vk-reviewers-field .select2-container {
+    width: 100% !important;
+}
+
+.vk-reviewers-field .select2-container--default .select2-selection--single {
+    background: var(--vk-muted-surface) !important;
+    border: 1px solid var(--vk-border) !important;
+    border-radius: var(--vk-radius-sm) !important;
+    height: 34px !important;
+}
+
+.vk-reviewers-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--vk-text) !important;
+    line-height: 32px !important;
+    padding-left: 10px !important;
+}
+
+.vk-reviewers-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 32px !important;
+}
+
+.vk-reviewers-field .select2-container--focus .select2-selection--single,
+.vk-reviewers-field .select2-container--open .select2-selection--single {
+    border-color: var(--vk-accent) !important;
+}
+
+.vk-reviewers-field .asmList {
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    list-style: none !important;
+    margin: 6px 0 0 !important;
+    padding: 0 !important;
+}
+
+.vk-reviewers-field .asmListItem {
+    align-items: center !important;
+    background: var(--vk-muted-surface) !important;
+    border: 1px solid var(--vk-border) !important;
+    border-radius: var(--vk-radius-sm) !important;
+    color: var(--vk-text) !important;
+    display: flex !important;
+    gap: 8px;
+    margin: 0 0 4px !important;
+    padding: 3px 8px !important;
+}
+
+.vk-reviewers-field .asmListItemLabel {
+    color: var(--vk-text) !important;
+    flex: 1 1 auto;
+    font-size: .85rem;
+}
+
+.vk-reviewers-field .asmListItemRemove {
+    color: var(--vk-muted) !important;
+    flex: 0 0 auto;
+    opacity: .8;
+}
+
+.vk-reviewers-field .asmListItemRemove:hover {
+    color: #c0392b !important;
+    opacity: 1;
+.}
 .vk-inline-delete {
     display: inline;
     margin: 0 0 0 auto;
