@@ -198,8 +198,7 @@ ob_start();
 
         <?php
         $workload = $this->getWorkloadByAssignee();
-        if ($workload['assignees']):
-            $wlConfig = [
+        $wlConfig = [
                 'status' => [
                     'keys'   => ['open', 'in_progress', 'review'],
                     'labels' => [
@@ -263,6 +262,18 @@ ob_start();
             function render() {
                 const keys = config[breakdown].keys;
                 const labels = config[breakdown].labels;
+
+                if (!data.length) {
+                    legendEl.textContent = '';
+                    rowsEl.textContent = '';
+                    const msg = document.createElement('p');
+                    msg.className = 'vk-workload-empty';
+                    msg.textContent = T.none;
+                    rowsEl.appendChild(msg);
+                    hintEl.hidden = true;
+                    return;
+                }
+
                 const max = data.reduce((m, a) => Math.max(m, a[metric]), 0);
 
                 legendEl.textContent = '';
@@ -339,7 +350,6 @@ ob_start();
             render();
         })();
         </script>
-        <?php endif; ?>
     </div>
 
     <div class="vk-dashboard-side">
