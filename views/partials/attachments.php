@@ -37,9 +37,20 @@ $deleteUrl = $this->page->url . '?view=file-delete';
         const a = document.createElement('div');
         a.className = 'vk-attach-card';
         a.dataset.id = f.id;
-        const thumb = f.is_image
-            ? '<a href="' + f.url + '" target="_blank"><img src="' + f.thumb + '" alt=""></a>'
-            : '<a href="' + f.url + '" class="vk-attach-icon"><i class="fa fa-file-o"></i></a>';
+        const media = document.createElement('a');
+        media.href = f.url;
+        media.target = '_blank';
+        if (f.is_image) {
+            const img = document.createElement('img');
+            img.src = f.thumb;
+            img.alt = '';
+            media.appendChild(img);
+        } else {
+            media.className = 'vk-attach-icon';
+            const icon = document.createElement('i');
+            icon.className = 'fa fa-file-o';
+            media.appendChild(icon);
+        }
         const meta = document.createElement('div');
         meta.className = 'vk-attach-meta';
         const name = document.createElement('a');
@@ -51,7 +62,7 @@ $deleteUrl = $this->page->url . '?view=file-delete';
         del.type = 'button'; del.className = 'vk-attach-del'; del.textContent = '×';
         del.addEventListener('click', () => removeFile(f.id, a));
         meta.append(name, size, del);
-        a.innerHTML = thumb;
+        a.appendChild(media);
         a.appendChild(meta);
         return a;
     }
