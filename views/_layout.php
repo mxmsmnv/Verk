@@ -3339,19 +3339,6 @@ body.dark-theme .vk-shell {
     padding: 0 !important;
 }
 
-/* Remove the box the admin theme draws around the whole picker. It survives
-   the reset above because the theme's rule is more specific, so match it with
-   a higher-specificity selector (.vk-shell prefix). The dropdown and chip keep
-   their own borders. */
-.vk-shell .vk-reviewers-field .Inputfield,
-.vk-shell .vk-reviewers-field .InputfieldContent,
-.vk-shell .vk-reviewers-field .asmContainer,
-.vk-shell .vk-reviewers-field .asmList {
-    background: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-}
-
 /* Keep the picker within its grid column. The workflow section is a
    3-col grid (minmax(0,1fr)); normal cells get min-width:0, but this
    standalone field is a direct grid item, so without min-width:0 its
@@ -3365,23 +3352,11 @@ body.dark-theme .vk-shell {
 .vk-reviewers-field .asmList,
 .vk-reviewers-field .select2-container,
 .vk-reviewers-field .select2-selection,
-.vk-reviewers-field .select2-selection--single,
-.vk-reviewers-field select.asmSelect {
+.vk-reviewers-field .select2-selection--single {
     box-sizing: border-box !important;
     max-width: 100% !important;
     min-width: 0 !important;
     width: 100% !important;
-}
-
-/* Match the add-dropdown to the other form selects (muted fill, soft border,
-   rounded). !important beats the admin theme's default select styling. */
-.vk-reviewers-field select.asmSelect {
-    background: var(--vk-muted-surface) !important;
-    border: 1px solid var(--vk-border) !important;
-    border-radius: var(--vk-radius-sm) !important;
-    font-size: .9rem !important;
-    height: 34px !important;
-    margin: 0 !important;
 }
 
 /* The admin theme enhances the add-dropdown with Select2, so the visible
