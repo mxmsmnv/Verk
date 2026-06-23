@@ -14,7 +14,7 @@ class VerkFiles {
         return in_array($type, self::ENTITIES, true);
     }
 
-    protected function db(): \PDO { return $this->module->wire('database'); }
+    protected function db(): WireDatabasePDO { return $this->module->wire('database'); }
 
     public function baseDir(): string {
         return $this->module->wire('config')->paths->assets . 'Verk/';
