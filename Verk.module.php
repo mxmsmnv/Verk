@@ -2839,6 +2839,122 @@ class Verk extends Process implements Module, ConfigurableModule {
         return $map;
     }
 
+    /**
+     * Render the reviewers picker as a self-contained widget: a native "add"
+     * dropdown plus a removable chip list. No third-party enhancement (Select2)
+     * or PW Inputfield wrapper, so it renders consistently and styles cleanly.
+     * Each chosen reviewer submits a hidden reviewer_ids[] field.
+     *
+     * @param array $users    [['id'=>int,'name'=>string], …] assignable pool
+     * @param array $selected int[] currently-selected reviewer ids (in order)
+     */
+    public function renderReviewerSelect(array $users, array $selected): string {
+        $selected = array_map('intval', $selected);
+        $selectedSet = array_flip($selected);
+        $esc = fn($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
+
+        $nameById = [];
+        foreach ($users as $u) $nameById[(int) $u['id']] = (string) $u['name'];
+
+        // Add-dropdown: everyone not already selected.
+        $options = '<option value="">' . $esc($this->_('Add reviewer…')) . '</option>';
+        foreach ($users as $u) {
+            $id = (int) $u['id'];
+            if (isset($selectedSet[$id])) continue;
+            $options .= '<option value="' . $id . '">' . $esc($u['name']) . '</option>';
+        }
+
+        // Chips for the currently-selected reviewers, in selection order.
+        $chips = '';
+        foreach ($selected as $id) {
+            $chips .= $this->reviewerChip($id, $nameById[$id] ?? ('#' . $id));
+        }
+
+        $out  = '<div class="vk-rev" data-rev data-remove-label="' . $esc($this->_('Remove reviewer')) . '">';
+        $out .= '<select class="uk-select vk-rev-add" data-rev-add aria-label="' . $esc($this->_('Add reviewer')) . '">' . $options . '</select>';
+        $out .= '<div class="vk-rev-list" data-rev-list>' . $chips . '</div>';
+        $out .= '</div>';
+        $out .= $this->reviewerWidgetScript();
+        return $out;
+    }
+
+    /** One selected-reviewer chip (server-rendered; mirrors the JS makeChip). */
+    protected function reviewerChip(int $id, string $name): string {
+        $esc = fn($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
+        return '<span class="vk-rev-chip" data-id="' . $id . '">'
+            . '<span class="vk-rev-name">' . $esc($name) . '</span>'
+            . '<button type="button" class="vk-rev-remove" data-rev-remove aria-label="' . $esc($this->_('Remove reviewer')) . '">&times;</button>'
+            . '<input type="hidden" name="reviewer_ids[]" value="' . $id . '">'
+            . '</span>';
+    }
+
+    /** Inline script powering the reviewers widget (add/remove, no navigation). */
+    protected function reviewerWidgetScript(): string {
+        return <<<'JS'
+<script>
+(function () {
+    var root = document.currentScript.previousElementSibling;
+    if (!root || !root.matches('[data-rev]')) return;
+    var add = root.querySelector('[data-rev-add]');
+    var list = root.querySelector('[data-rev-list]');
+    var removeLabel = root.getAttribute('data-remove-label') || 'Remove';
+
+    function makeChip(id, name) {
+        var chip = document.createElement('span');
+        chip.className = 'vk-rev-chip';
+        chip.dataset.id = id;
+        var n = document.createElement('span');
+        n.className = 'vk-rev-name';
+        n.textContent = name;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'vk-rev-remove';
+        btn.setAttribute('data-rev-remove', '');
+        btn.setAttribute('aria-label', removeLabel);
+        btn.textContent = '×';
+        var hid = document.createElement('input');
+        hid.type = 'hidden';
+        hid.name = 'reviewer_ids[]';
+        hid.value = id;
+        chip.appendChild(n);
+        chip.appendChild(btn);
+        chip.appendChild(hid);
+        return chip;
+    }
+
+    function reAddOption(id, name) {
+        var opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = name;
+        var rest = Array.prototype.slice.call(add.options, 1);
+        var before = null;
+        for (var i = 0; i < rest.length; i++) {
+            if (rest[i].textContent.toLowerCase() > name.toLowerCase()) { before = rest[i]; break; }
+        }
+        add.insertBefore(opt, before);
+    }
+
+    add.addEventListener('change', function () {
+        if (!add.value) return;
+        var opt = add.options[add.selectedIndex];
+        list.appendChild(makeChip(add.value, opt.textContent));
+        opt.remove();
+        add.value = '';
+    });
+
+    list.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-rev-remove]');
+        if (!btn || !list.contains(btn)) return;
+        var chip = btn.closest('.vk-rev-chip');
+        if (!chip) return;
+        reAddOption(chip.dataset.id, chip.querySelector('.vk-rev-name').textContent);
+        chip.remove();
+    });
+})();
+</script>
+JS;
+    }
+
     public function renderRichTextEditor(string $name, string $value, int $height = 160): string {
         $editor = $this->wire('modules')->get('InputfieldTinyMCE');
         if (!$editor) {
