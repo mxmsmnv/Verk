@@ -263,6 +263,12 @@ ob_start();
                         </div>
                     </div>
 
+                    <?php if ($isEdit): ?>
+                    <div class="vk-form-section">
+                        <?php $attachEntityType = 'task'; $attachEntityId = (int)$t['id']; require __DIR__ . '/partials/attachments.php'; ?>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="vk-form-actions">
                         <button type="submit" class="uk-button uk-button-primary"><?= $returnUrl ? ($isEdit ? __('Save and return') : __('Create and return')) : ($isEdit ? __('Save Changes') : __('Create Task')) ?></button>
                         <a href="<?= htmlspecialchars($returnUrl ?: ($url . '?view=tasks')) ?>" class="uk-button uk-button-default"><?= __('Cancel') ?></a>

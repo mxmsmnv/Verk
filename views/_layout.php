@@ -3678,6 +3678,18 @@ body.dark-theme .vk-shell {
     padding-top: 2px;
 }
 
+.vk-attachments{display:grid;gap:8px;margin-top:6px}
+.vk-attach-drop{align-items:center;border:1px dashed var(--vk-border);border-radius:var(--vk-radius-sm);color:var(--vk-muted);cursor:pointer;display:flex;justify-content:center;min-height:54px;padding:10px;text-align:center}
+.vk-attach-drop.is-over{border-color:var(--vk-accent);color:var(--vk-text)}
+.vk-attach-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.vk-attach-card{border:1px solid var(--vk-border);border-radius:var(--vk-radius-sm);overflow:hidden}
+.vk-attach-card img{display:block;width:100%;height:96px;object-fit:cover}
+.vk-attach-icon{align-items:center;color:var(--vk-muted);display:flex;font-size:1.8rem;height:96px;justify-content:center}
+.vk-attach-meta{align-items:center;display:flex;gap:6px;padding:6px 8px}
+.vk-attach-name{flex:1 1 auto;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vk-attach-size{color:var(--vk-muted);font-size:.72rem}
+.vk-attach-del{background:transparent;border:0;color:var(--vk-muted);cursor:pointer;font-size:1.1rem;line-height:1}
+
 .vk-skeleton {
     background: linear-gradient(90deg, var(--vk-skeleton-a), var(--vk-skeleton-b), var(--vk-skeleton-a));
     background-size: 220% 100%;
