@@ -3425,7 +3425,29 @@ body.dark-theme .vk-shell {
 .vk-reviewers-field .asmListItemRemove:hover {
     color: #c0392b !important;
     opacity: 1;
-.}
+}
+
+/* Review decision (Approve / Request changes) — compact buttons with breathing
+   room around the group. */
+.vk-review-decision {
+    margin: 0 0 14px;
+}
+
+.vk-review-decision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.vk-review-decision-actions .uk-button {
+    font-size: .78rem;
+    height: 30px;
+    line-height: 28px;
+    min-height: 0;
+    padding: 0 12px;
+}
+
 .vk-inline-delete {
     display: inline;
     margin: 0 0 0 auto;
