@@ -347,6 +347,31 @@ body.dark-theme .vk-shell {
 .vk-label-low         { background:var(--pw-alert-success); color:var(--pw-text-color) !important; }
 .vk-label-critical    { background:var(--pw-error-inline-text-color); color:var(--pw-blocks-background) !important; }
 
+/* Workload chart */
+.vk-workload-toggles{display:flex;flex-wrap:wrap;gap:8px}
+.vk-seg{align-items:stretch;border:1px solid var(--vk-border);border-radius:var(--vk-radius-sm);display:inline-flex;overflow:hidden}
+.vk-seg button{background:transparent;border:0;color:var(--vk-muted);cursor:pointer;font-size:.72rem;line-height:1;padding:4px 10px}
+.vk-seg button + button{border-left:1px solid var(--vk-border)}
+.vk-seg button.is-active{background:var(--vk-muted-surface);color:var(--vk-text);font-weight:600}
+.vk-workload-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:12px}
+.vk-wl-legend-item{align-items:center;color:var(--vk-muted);display:inline-flex;font-size:.74rem;gap:5px}
+.vk-wl-swatch{border-radius:2px;flex:none;height:10px;width:10px}
+.vk-workload-rows{display:grid;gap:8px}
+.vk-wl-row{align-items:center;display:grid;gap:10px;grid-template-columns:minmax(72px,120px) 1fr auto}
+.vk-wl-name{font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vk-wl-track{background:var(--vk-muted-surface);border-radius:7px;height:14px;overflow:hidden}
+.vk-wl-bar{display:flex;height:100%;min-width:2px}
+.vk-wl-seg{height:100%}
+.vk-wl-total{color:var(--vk-muted);font-size:.78rem;min-width:30px;text-align:right}
+.vk-workload-empty,.vk-workload-hint{color:var(--vk-muted);font-size:.78rem;margin:6px 0 0}
+.vk-workload-card .is-open{background:var(--vk-muted)}
+.vk-workload-card .is-in_progress{background:var(--pw-alert-warning)}
+.vk-workload-card .is-review{background:var(--vk-accent)}
+.vk-workload-card .is-critical{background:var(--pw-error-inline-text-color)}
+.vk-workload-card .is-high{background:var(--pw-alert-warning)}
+.vk-workload-card .is-medium{background:color-mix(in srgb,var(--vk-text) 30%,transparent)}
+.vk-workload-card .is-low{background:var(--pw-alert-success)}
+
 .vk-chip {
     display:inline-flex;
     align-items:center;
