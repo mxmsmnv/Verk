@@ -428,7 +428,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     protected function viewTasks(): string {
         $db       = $this->wire('database');
         $input    = $this->wire('input');
-        $validStatus = ['open', 'in_progress', 'review', 'done'];
+        $validStatus = ['active', 'open', 'in_progress', 'review', 'done'];
         $validPrio   = ['low', 'medium', 'high', 'critical'];
         $status   = in_array($input->get('status', 'string'), $validStatus, true) ? $input->get('status', 'string') : '';
         $prio     = in_array($input->get('priority', 'string'), $validPrio, true)  ? $input->get('priority', 'string') : '';
@@ -455,7 +455,7 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         $where  = ['1=1'];
         $params = [];
-        if ($status)   { $where[] = 't.status = :status';       $params[':status'] = $status; }
+        if ($status !== '') { $where[] = $this->taskStatusWhere($status, $params); }
         if ($prio)     { $where[] = 't.priority = :prio';       $params[':prio']   = $prio; }
         if ($assigneeId === -1) { $where[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $where[] = 't.assignee_id = :assignee_id'; $params[':assignee_id'] = $assigneeId; }
@@ -478,7 +478,7 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         $quarterBaseWhere = ['1=1'];
         $quarterBaseParams = [];
-        if ($status)   { $quarterBaseWhere[] = 't.status = :status';       $quarterBaseParams[':status'] = $status; }
+        if ($status !== '') { $quarterBaseWhere[] = $this->taskStatusWhere($status, $quarterBaseParams); }
         if ($prio)     { $quarterBaseWhere[] = 't.priority = :prio';       $quarterBaseParams[':prio'] = $prio; }
         if ($assigneeId === -1) { $quarterBaseWhere[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $quarterBaseWhere[] = 't.assignee_id = :assignee_id'; $quarterBaseParams[':assignee_id'] = $assigneeId; }
@@ -1530,9 +1530,22 @@ class Verk extends Process implements Module, ConfigurableModule {
         return array_values($out);
     }
 
+    /**
+     * WHERE fragment for a task status filter. The pseudo-status 'active' matches
+     * any non-done task (open + in progress + review) — the same set the
+     * dashboard's "Open / Needs attention" tile counts. Returns '' for no filter.
+     */
+    public function taskStatusWhere(string $status, array &$params): string {
+        if ($status === '') return '';
+        if ($status === 'active') return "t.status != 'done'";
+        $params[':status'] = $status;
+        return 't.status = :status';
+    }
+
     // Translated display labels for the status/priority enums (shared by views).
     public function statusLabel(string $status): string {
         $map = [
+            'active'      => $this->_('Active'),
             'open'        => $this->_('Open'),
             'in_progress' => $this->_('In Progress'),
             'review'      => $this->_('Review'),
@@ -1697,7 +1710,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     }
 
     protected function exportTaskFilters(array $input): array {
-        $status = in_array((string)($input['status'] ?? ''), ['open', 'in_progress', 'review', 'done'], true)
+        $status = in_array((string)($input['status'] ?? ''), ['active', 'open', 'in_progress', 'review', 'done'], true)
             ? (string)$input['status']
             : '';
         $priority = in_array((string)($input['priority'] ?? ''), ['low', 'medium', 'high', 'critical'], true)

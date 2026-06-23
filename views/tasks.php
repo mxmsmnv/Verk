@@ -187,7 +187,7 @@ ob_start();
         <div class="vk-task-filter-label"><?= __('Status') ?></div>
         <ul class="uk-subnav uk-subnav-pill vk-view-switcher vk-task-filter-tabs">
             <?php
-            $statuses = ['' => __('All'), 'open' => $this->statusLabel('open'), 'in_progress' => $this->statusLabel('in_progress'), 'review' => $this->statusLabel('review'), 'done' => $this->statusLabel('done')];
+            $statuses = ['' => __('All'), 'active' => $this->statusLabel('active'), 'open' => $this->statusLabel('open'), 'in_progress' => $this->statusLabel('in_progress'), 'review' => $this->statusLabel('review'), 'done' => $this->statusLabel('done')];
             foreach ($statuses as $v => $l):
                 $active = $statusFilter === $v;
                 $href   = $buildTaskUrl(['status' => $v, 'page' => null]);
