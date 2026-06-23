@@ -86,6 +86,7 @@ ob_start();
         </div>
         <dl class="vk-issue-meta">
             <div><dt><?= __('Assignee') ?></dt><dd><?= htmlspecialchars($assigneeName) ?></dd></div>
+            <div><dt><?= __('Reviewers') ?></dt><dd<?= $reviewerNames ? ' uk-tooltip="' . htmlspecialchars($reviewerNames, ENT_QUOTES) . '"' : '' ?>><?= $reviewerNames ? htmlspecialchars($reviewerNames) : __('None') ?></dd></div>
             <div><dt><?= __('Due date') ?></dt><dd><?= htmlspecialchars($t['due_date'] ?: __('Not set')) ?></dd></div>
             <div><dt><?= __('Quarter') ?></dt><dd><?= htmlspecialchars($dueQuarterLabel ?: __('Not set')) ?></dd></div>
             <div><dt><?= __('Sprint') ?></dt><dd><?= htmlspecialchars($sprintName) ?></dd></div>
