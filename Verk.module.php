@@ -2306,6 +2306,26 @@ class Verk extends Process implements Module, ConfigurableModule {
         $this->jsonResponse(['ok' => true, 'files' => $files]);
     }
 
+    protected function viewFile(): string {
+        $id  = (int) $this->wire('input')->get('id');
+        $row = $id ? $this->files->get($id) : null;
+        if (!$row) { http_response_code(404); exit; }
+
+        $wantThumb = $this->wire('input')->get('size') === 'thumb';
+        $path = $wantThumb ? ($this->files->thumbPathFor($row) ?: $this->files->streamPath($row))
+                           : $this->files->streamPath($row);
+        if (!is_file($path)) { http_response_code(404); exit; }
+
+        // Inline only true raster images; svg + everything else downloads.
+        $inline = $row['is_image'];
+        while (ob_get_level() > 0) ob_end_clean();
+        $this->wire('files')->send($path, [
+            'forceDownload' => !$inline,
+            'downloadFilename' => $row['original_name'],
+        ]);
+        exit;
+    }
+
     protected function viewAjaxSearch(): string {
         while (ob_get_level() > 0) ob_end_clean();
         header('Content-Type: application/json');
