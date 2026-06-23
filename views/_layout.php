@@ -363,7 +363,12 @@ body.dark-theme .vk-shell {
     white-space:nowrap;
 }
 
-/* Match the linked-page Clear button to the chips it sits beside. */
+/* Linked-page actions: separate them from the input above, and match the
+   Clear button to the chips it sits beside. */
+.vk-linked-page-actions {
+    margin-top: 10px;
+}
+
 .vk-linked-page-actions .uk-button {
     border-radius: 999px;
     font-size: .78rem;
