@@ -270,6 +270,9 @@ class Verk extends Process implements Module, ConfigurableModule {
         $input = $this->wire('input');
 
         if ($input->requestMethod('POST')) {
+            $postView = $input->get('view', 'string');
+            if ($postView === 'file-upload') return $this->viewFileUpload();
+            if ($postView === 'file-delete') return $this->viewFileDelete();
             $action = $input->post('action', 'string');
             return match($action) {
                 'save_task'      => $this->actionSaveTask(),
@@ -2294,6 +2297,12 @@ class Verk extends Process implements Module, ConfigurableModule {
         $emb   = (int) (bool) $input->post('embedded');
         if (!$this->files->isValidEntity($type) || $id < 1) {
             $this->jsonResponse(['ok' => false, 'message' => $this->_('Invalid target.')], 400);
+        }
+        $table = ['task' => 'vk_tasks', 'note' => 'vk_notes', 'comment' => 'vk_comments'][$type];
+        $stmt = $this->wire('database')->prepare("SELECT id FROM `$table` WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        if (!$stmt->fetchColumn()) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Target not found.')], 404);
         }
         try {
             $stored = $this->files->store($type, $id, (bool) $emb);
