@@ -85,11 +85,39 @@ class VerkDB {
                 KEY `category` (`category`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_files` (
+                `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `entity_type`   ENUM('task','note','comment') NOT NULL,
+                `entity_id`     INT UNSIGNED NOT NULL,
+                `stored_name`   VARCHAR(255) NOT NULL,
+                `original_name` VARCHAR(255) NOT NULL,
+                `ext`           VARCHAR(16)  NOT NULL,
+                `mime`          VARCHAR(127) NOT NULL,
+                `size`          INT UNSIGNED NOT NULL DEFAULT 0,
+                `width`         SMALLINT UNSIGNED DEFAULT NULL,
+                `height`        SMALLINT UNSIGNED DEFAULT NULL,
+                `embedded`      TINYINT(1) NOT NULL DEFAULT 0,
+                `uploaded_by`   INT UNSIGNED NOT NULL DEFAULT 0,
+                `created_at`    DATETIME NOT NULL,
+                PRIMARY KEY (`id`),
+                KEY `entity` (`entity_type`, `entity_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
     }
 
-    public static function uninstall($db): void {
-        foreach (['vk_time_logs', 'vk_comments', 'vk_tasks', 'vk_sprints', 'vk_notes'] as $t) {
+    public static function uninstall($db, ?string $assetsDir = null): void {
+        foreach (['vk_time_logs', 'vk_comments', 'vk_tasks', 'vk_sprints', 'vk_notes', 'vk_files'] as $t) {
             $db->exec("DROP TABLE IF EXISTS `$t`");
+        }
+        if ($assetsDir && is_dir($assetsDir)) {
+            $it = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($assetsDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($it as $f) { $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname()); }
+            @rmdir($assetsDir);
         }
     }
 
@@ -141,6 +169,27 @@ class VerkDB {
                 KEY `task_id` (`task_id`),
                 KEY `user_id` (`user_id`),
                 KEY `logged_date` (`logged_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+
+        // vk_files — added for attachments feature
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_files` (
+                `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `entity_type`   ENUM('task','note','comment') NOT NULL,
+                `entity_id`     INT UNSIGNED NOT NULL,
+                `stored_name`   VARCHAR(255) NOT NULL,
+                `original_name` VARCHAR(255) NOT NULL,
+                `ext`           VARCHAR(16)  NOT NULL,
+                `mime`          VARCHAR(127) NOT NULL,
+                `size`          INT UNSIGNED NOT NULL DEFAULT 0,
+                `width`         SMALLINT UNSIGNED DEFAULT NULL,
+                `height`        SMALLINT UNSIGNED DEFAULT NULL,
+                `embedded`      TINYINT(1) NOT NULL DEFAULT 0,
+                `uploaded_by`   INT UNSIGNED NOT NULL DEFAULT 0,
+                `created_at`    DATETIME NOT NULL,
+                PRIMARY KEY (`id`),
+                KEY `entity` (`entity_type`, `entity_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
     }
