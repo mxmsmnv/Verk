@@ -922,6 +922,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $db->prepare("DELETE FROM vk_time_logs WHERE task_id=:id")->execute([':id'=>$id]);
         $db->prepare("DELETE FROM vk_comments WHERE task_id=:id")->execute([':id'=>$id]);
         $db->prepare("DELETE FROM vk_tasks WHERE id=:id")->execute([':id'=>$id]);
+        $this->files->deleteForEntity('task', $id);
+        $this->files->deleteForEntity('comment', $id); // comments belong to the task
         $this->message($this->_('Task deleted.'));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('tasks');
@@ -975,6 +977,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         if (!$id) { $this->redirect('kb'); }
         $this->requireOwner('vk_notes', $id);
         $this->wire('database')->prepare("DELETE FROM vk_notes WHERE id=:id")->execute([':id'=>$id]);
+        $this->files->deleteForEntity('note', $id);
         $this->message($this->_('Note deleted.'));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('kb');
@@ -2324,6 +2327,15 @@ class Verk extends Process implements Module, ConfigurableModule {
             'downloadFilename' => $row['original_name'],
         ]);
         exit;
+    }
+
+    protected function viewFileDelete(): string {
+        $this->requireAjaxCSRF();
+        $id  = (int) $this->wire('input')->post('id');
+        $row = $id ? $this->files->get($id) : null;
+        if (!$row) $this->jsonResponse(['ok' => false, 'message' => $this->_('File not found.')], 404);
+        $this->files->deleteFile($id);
+        $this->jsonResponse(['ok' => true]);
     }
 
     protected function viewAjaxSearch(): string {
