@@ -293,7 +293,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         }
 
         $view = $input->get('view', 'string') ?: 'dashboard';
-        if (!in_array($view, ['ajax-search', 'ajax-sprint-tasks', 'export-docx'], true)) {
+        if (!in_array($view, ['ajax-search', 'ajax-sprint-tasks', 'export-docx', 'file-upload', 'file', 'file-delete'], true)) {
             $this->setAdminChrome($view);
         }
         return match($view) {
@@ -310,6 +310,9 @@ class Verk extends Process implements Module, ConfigurableModule {
             'ajax-sprint-tasks' => $this->viewAjaxSprintTasks(),
             'bulk-audit'   => $this->viewBulkAuditForm(),
             'export-docx'  => $this->viewExportDocx(),
+            'file-upload'  => $this->viewFileUpload(),
+            'file'         => $this->viewFile(),
+            'file-delete'  => $this->viewFileDelete(),
             default        => $this->viewDashboard(),
         };
     }
@@ -2278,6 +2281,30 @@ class Verk extends Process implements Module, ConfigurableModule {
 
     // Page search (AJAX for task page picker)
     // -------------------------------------------------------------------------
+
+    protected function viewFileUpload(): string {
+        $this->requireAjaxCSRF();
+        $input = $this->wire('input');
+        $type  = (string) $input->post('entity_type');
+        $id    = (int) $input->post('entity_id');
+        $emb   = (int) (bool) $input->post('embedded');
+        if (!$this->files->isValidEntity($type) || $id < 1) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Invalid target.')], 400);
+        }
+        try {
+            $stored = $this->files->store($type, $id, (bool) $emb);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+        if (!$stored) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('No file was uploaded (check type and size).')], 422);
+        }
+        $files = array_map(fn($r) => [
+            'id' => (int) $r['id'], 'original_name' => $r['original_name'], 'url' => $r['url'],
+            'thumb' => $r['thumb'], 'mime' => $r['mime'], 'human_size' => $r['human_size'], 'is_image' => $r['is_image'],
+        ], $stored);
+        $this->jsonResponse(['ok' => true, 'files' => $files]);
+    }
 
     protected function viewAjaxSearch(): string {
         while (ob_get_level() > 0) ob_end_clean();
