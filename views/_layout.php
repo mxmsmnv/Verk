@@ -3689,6 +3689,18 @@ body.dark-theme .vk-shell {
 .vk-attach-name{flex:1 1 auto;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vk-attach-size{color:var(--vk-muted);font-size:.72rem}
 .vk-attach-del{background:transparent;border:0;color:var(--vk-muted);cursor:pointer;font-size:1.1rem;line-height:1}
+.vk-lightbox{align-items:center;background:rgba(0,0,0,.82);display:none;inset:0;justify-content:center;position:fixed;z-index:10000}
+.vk-lightbox.is-open{display:flex}
+.vk-lightbox-stage{align-items:center;display:flex;flex-direction:column;gap:8px;max-height:92vh;max-width:92vw}
+.vk-lightbox-img{box-shadow:0 6px 40px rgba(0,0,0,.5);max-height:86vh;max-width:92vw;object-fit:contain}
+.vk-lightbox-cap{color:#fff;font-size:.8rem;max-width:92vw;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}
+.vk-lightbox-close{position:absolute;right:18px;top:14px}
+.vk-lightbox-close,.vk-lightbox-nav{background:rgba(255,255,255,.12);border:0;border-radius:4px;color:#fff;cursor:pointer;font-size:1.6rem;line-height:1;padding:6px 13px}
+.vk-lightbox-close:hover,.vk-lightbox-nav:hover{background:rgba(255,255,255,.28)}
+.vk-lightbox-nav{position:absolute;top:50%;transform:translateY(-50%)}
+.vk-lightbox-nav.is-prev{left:14px}
+.vk-lightbox-nav.is-next{right:14px}
+.vk-attach-card [data-vk-open]{cursor:zoom-in}
 
 .vk-skeleton {
     background: linear-gradient(90deg, var(--vk-skeleton-a), var(--vk-skeleton-b), var(--vk-skeleton-a));
