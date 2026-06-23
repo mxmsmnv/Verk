@@ -5,7 +5,8 @@ class VerkFiles {
     const ENTITIES  = ['task', 'note', 'comment'];
     const MAX_BYTES = 26214400; // 25 MB
     const ALLOWED   = ['jpg','jpeg','png','gif','webp','svg','pdf','docx','xlsx','pptx','txt','csv','zip'];
-    const IMAGE_EXT = ['jpg','jpeg','png','gif','webp']; // svg intentionally excluded (inline XSS)
+    const IMAGE_EXT = ['jpg','jpeg','png','gif','webp']; // raster: getimagesize() dimensions + ImageSizer thumbnails
+    const VIEWABLE_EXT = ['jpg','jpeg','png','gif','webp','svg']; // shown as <img>; svg is safe via <img> but is never served inline
     const THUMB_MAX = 240;
 
     public function __construct(protected Verk $module) {}
@@ -111,11 +112,16 @@ class VerkFiles {
     }
 
     public function isImage(array $row): bool {
+        return in_array(strtolower($row['ext']), self::VIEWABLE_EXT, true);
+    }
+
+    /** Raster image we can resize and serve inline; svg is viewable but neither. */
+    public function isInlineImage(array $row): bool {
         return in_array(strtolower($row['ext']), self::IMAGE_EXT, true);
     }
 
     public function thumbPathFor(array $row): ?string {
-        if (!$this->isImage($row)) return null;
+        if (!$this->isInlineImage($row)) return null; // only raster gets a resized thumbnail; svg falls back to the original
         $dir   = $this->dirFor($row['entity_type'], (int) $row['entity_id']);
         $thumb = $dir . '.thumbs/' . $row['stored_name'];
         if (is_file($thumb)) return $thumb;

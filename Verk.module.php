@@ -2329,11 +2329,24 @@ class Verk extends Process implements Module, ConfigurableModule {
                            : $this->files->streamPath($row);
         if (!is_file($path)) { http_response_code(404); exit; }
 
-        // Inline only true raster images; svg + everything else downloads.
-        $inline = $row['is_image'];
         while (ob_get_level() > 0) ob_end_clean();
+
+        // SVG renders fine inside an <img> (script-inert there), but must never run
+        // as a document: force-download on direct navigation and strip all scripting
+        // via CSP/sandbox/nosniff. The grid + lightbox <img> tags still display it.
+        if (strtolower($row['ext']) === 'svg') {
+            header('Content-Type: image/svg+xml');
+            header('X-Content-Type-Options: nosniff');
+            header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox");
+            header('Content-Disposition: attachment; filename="' . addslashes($row['original_name']) . '"');
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        }
+
+        // Inline only true raster images; everything else downloads.
         $this->wire('files')->send($path, [
-            'forceDownload' => !$inline,
+            'forceDownload' => !$this->files->isInlineImage($row),
             'downloadFilename' => $row['original_name'],
         ]);
         exit;
