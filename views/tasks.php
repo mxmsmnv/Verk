@@ -23,6 +23,8 @@ $sortLabels      = [
 ];
 if (!isset($sortLabels[$sortFilter])) $sortFilter = 'default';
 $assigneeFilter  = $currentAssigneeId ?? (int)$input->get('assignee_id');
+$reviewerFilter  = $currentReviewerId ?? (int)$input->get('reviewer_id');
+$collaboratorFilter = $currentCollaboratorId ?? (int)$input->get('collaborator_id');
 $sprintFilter    = $currentSprintId ?? 0;
 $taskDateState   = $currentTaskDateState ?? ($input->get('date_state', 'string') === 'none' ? 'none' : '');
 $sprints         = $sprints ?? [];
@@ -32,13 +34,15 @@ $taskQuarterYear = $taskQuarterYear ?? ($taskQuarter ? (int)$taskQuarter['year']
 $taskQuarterCounts = $taskQuarterCounts ?? [];
 $taskNoDueCount = $taskNoDueCount ?? 0;
 $taskStatusSummary = $taskStatusSummary ?? [];
-$buildTaskUrl = function(array $changes = []) use ($url, $statusFilter, $prioFilter, $searchFilter, $sortFilter, $assigneeFilter, $sprintFilter, $taskQuarter, $taskDateState) {
+$buildTaskUrl = function(array $changes = []) use ($url, $statusFilter, $prioFilter, $searchFilter, $sortFilter, $assigneeFilter, $reviewerFilter, $collaboratorFilter, $sprintFilter, $taskQuarter, $taskDateState) {
     $params = ['view' => 'tasks'];
     if ($statusFilter) $params['status'] = $statusFilter;
     if ($prioFilter) $params['priority'] = $prioFilter;
     if ($searchFilter) $params['q'] = $searchFilter;
     if ($sortFilter !== 'default') $params['sort'] = $sortFilter;
     if ($assigneeFilter) $params['assignee_id'] = $assigneeFilter;
+    if ($reviewerFilter) $params['reviewer_id'] = $reviewerFilter;
+    if ($collaboratorFilter) $params['collaborator_id'] = $collaboratorFilter;
     if ($sprintFilter) $params['sprint_id'] = $sprintFilter;
     if ($taskDateState) $params['date_state'] = $taskDateState;
     if ($taskQuarter) {
@@ -69,6 +73,26 @@ if ((int)$sprintFilter === -1) {
 foreach ($users as $u) {
     if ((int)$u['id'] === (int)$assigneeFilter) {
         $assigneeFilterName = (string)$u['name'];
+        break;
+    }
+}
+$reviewerFilterName = '';
+if ((int)$reviewerFilter === -1) {
+    $reviewerFilterName = __('No reviewer');
+}
+foreach ($users as $u) {
+    if ((int)$u['id'] === (int)$reviewerFilter) {
+        $reviewerFilterName = (string)$u['name'];
+        break;
+    }
+}
+$collaboratorFilterName = '';
+if ((int)$collaboratorFilter === -1) {
+    $collaboratorFilterName = __('No collaborator');
+}
+foreach ($users as $u) {
+    if ((int)$u['id'] === (int)$collaboratorFilter) {
+        $collaboratorFilterName = (string)$u['name'];
         break;
     }
 }
@@ -105,6 +129,8 @@ if ($searchFilter) $activeFilters[] = ['label' => sprintf(__('Search: %s'), $sea
 if ($statusFilter) $activeFilters[] = ['label' => sprintf(__('Status: %s'), $this->statusLabel($statusFilter)), 'href' => $buildTaskUrl(['status' => null, 'page' => null])];
 if ($prioFilter) $activeFilters[] = ['label' => sprintf(__('Priority: %s'), $this->priorityLabel($prioFilter)), 'href' => $buildTaskUrl(['priority' => null, 'page' => null])];
 if ($assigneeFilter) $activeFilters[] = ['label' => sprintf(__('Assignee: %s'), $assigneeFilterName ?: ('#' . (int)$assigneeFilter)), 'href' => $buildTaskUrl(['assignee_id' => null, 'page' => null])];
+if ($reviewerFilter) $activeFilters[] = ['label' => sprintf(__('Reviewer: %s'), $reviewerFilterName ?: ('#' . (int)$reviewerFilter)), 'href' => $buildTaskUrl(['reviewer_id' => null, 'page' => null])];
+if ($collaboratorFilter) $activeFilters[] = ['label' => sprintf(__('Collaborator: %s'), $collaboratorFilterName ?: ('#' . (int)$collaboratorFilter)), 'href' => $buildTaskUrl(['collaborator_id' => null, 'page' => null])];
 if ($taskQuarterLabel) $activeFilters[] = ['label' => sprintf(__('Quarter: %s'), $taskQuarterLabel), 'href' => $buildTaskUrl(['quarter' => null, 'year' => null, 'page' => null])];
 if ($taskDateState === 'none') $activeFilters[] = ['label' => __('No due date'), 'href' => $buildTaskUrl(['date_state' => null, 'page' => null])];
 if ($sprintFilter) $activeFilters[] = ['label' => sprintf(__('Sprint: %s'), $sprintFilterName ?: ('#' . (int)$sprintFilter)), 'href' => $buildTaskUrl(['sprint_id' => null, 'page' => null])];
@@ -167,6 +193,8 @@ ob_start();
             <?php if ($statusFilter): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
             <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
             <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($reviewerFilter): ?><input type="hidden" name="reviewer_id" value="<?= (int)$reviewerFilter ?>"><?php endif; ?>
+            <?php if ($collaboratorFilter): ?><input type="hidden" name="collaborator_id" value="<?= (int)$collaboratorFilter ?>"><?php endif; ?>
             <?php if ($sprintFilter): ?><input type="hidden" name="sprint_id" value="<?= (int)$sprintFilter ?>"><?php endif; ?>
             <?php if ($sortFilter !== 'default'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortFilter) ?>"><?php endif; ?>
             <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
@@ -237,7 +265,7 @@ ob_start();
             <input type="hidden" name="quarter" value="<?= (int)$taskQuarter['quarter'] ?>">
             <input type="hidden" name="year" value="<?= (int)$taskQuarter['year'] ?>">
             <?php endif; ?>
-            <select class="uk-select" name="assignee_id" onchange="this.form.submit()">
+            <select class="uk-select" name="assignee_id" data-vk-autosubmit>
                 <option value=""><?= __('Anyone') ?></option>
                 <option value="-1" <?= (int)$assigneeFilter === -1 ? 'selected' : '' ?>><?= __('Unassigned') ?></option>
                 <?php foreach ($users as $u): ?>
@@ -251,6 +279,64 @@ ob_start();
     </div>
 
     <div class="vk-task-filter-group">
+        <div class="vk-task-filter-label"><?= __('Collaborator') ?></div>
+        <form method="get" action="<?= $url ?>" class="vk-filter-select-form">
+            <input type="hidden" name="view" value="tasks">
+            <?php if ($statusFilter): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
+            <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
+            <?php if ($searchFilter): ?><input type="hidden" name="q" value="<?= htmlspecialchars($searchFilter) ?>"><?php endif; ?>
+            <?php if ($sortFilter !== 'default'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortFilter) ?>"><?php endif; ?>
+            <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($reviewerFilter): ?><input type="hidden" name="reviewer_id" value="<?= (int)$reviewerFilter ?>"><?php endif; ?>
+            <?php if ($sprintFilter): ?><input type="hidden" name="sprint_id" value="<?= (int)$sprintFilter ?>"><?php endif; ?>
+            <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
+            <?php if ($taskQuarter): ?>
+            <input type="hidden" name="quarter" value="<?= (int)$taskQuarter['quarter'] ?>">
+            <input type="hidden" name="year" value="<?= (int)$taskQuarter['year'] ?>">
+            <?php endif; ?>
+            <select class="uk-select" name="collaborator_id" data-vk-autosubmit>
+                <option value=""><?= __('Anyone') ?></option>
+                <option value="-1" <?= (int)$collaboratorFilter === -1 ? 'selected' : '' ?>><?= __('No collaborator') ?></option>
+                <?php foreach ($users as $u): ?>
+                <option value="<?= (int)$u['id'] ?>" <?= (int)$collaboratorFilter === (int)$u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php if ($collaboratorFilter): ?>
+            <a class="vk-filter-reset" href="<?= $buildTaskUrl(['collaborator_id' => null, 'page' => null]) ?>"><?= __('Clear collaborator') ?></a>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <div class="vk-task-filter-group">
+        <div class="vk-task-filter-label"><?= __('Reviewer') ?></div>
+        <form method="get" action="<?= $url ?>" class="vk-filter-select-form">
+            <input type="hidden" name="view" value="tasks">
+            <?php if ($statusFilter): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
+            <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
+            <?php if ($searchFilter): ?><input type="hidden" name="q" value="<?= htmlspecialchars($searchFilter) ?>"><?php endif; ?>
+            <?php if ($sortFilter !== 'default'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortFilter) ?>"><?php endif; ?>
+            <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($sprintFilter): ?><input type="hidden" name="sprint_id" value="<?= (int)$sprintFilter ?>"><?php endif; ?>
+            <?php if ($collaboratorFilter): ?><input type="hidden" name="collaborator_id" value="<?= (int)$collaboratorFilter ?>"><?php endif; ?>
+            <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
+            <?php if ($taskQuarter): ?>
+            <input type="hidden" name="quarter" value="<?= (int)$taskQuarter['quarter'] ?>">
+            <input type="hidden" name="year" value="<?= (int)$taskQuarter['year'] ?>">
+            <?php endif; ?>
+            <select class="uk-select" name="reviewer_id" data-vk-autosubmit>
+                <option value=""><?= __('Anyone') ?></option>
+                <option value="-1" <?= (int)$reviewerFilter === -1 ? 'selected' : '' ?>><?= __('No reviewer') ?></option>
+                <?php foreach ($users as $u): ?>
+                <option value="<?= (int)$u['id'] ?>" <?= (int)$reviewerFilter === (int)$u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php if ($reviewerFilter): ?>
+            <a class="vk-filter-reset" href="<?= $buildTaskUrl(['reviewer_id' => null, 'page' => null]) ?>"><?= __('Clear reviewer') ?></a>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <div class="vk-task-filter-group">
         <div class="vk-task-filter-label"><?= __('Sprint') ?></div>
         <form method="get" action="<?= $url ?>" class="vk-filter-select-form">
             <input type="hidden" name="view" value="tasks">
@@ -258,13 +344,15 @@ ob_start();
             <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
             <?php if ($searchFilter): ?><input type="hidden" name="q" value="<?= htmlspecialchars($searchFilter) ?>"><?php endif; ?>
             <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($reviewerFilter): ?><input type="hidden" name="reviewer_id" value="<?= (int)$reviewerFilter ?>"><?php endif; ?>
+            <?php if ($collaboratorFilter): ?><input type="hidden" name="collaborator_id" value="<?= (int)$collaboratorFilter ?>"><?php endif; ?>
             <?php if ($sortFilter !== 'default'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortFilter) ?>"><?php endif; ?>
             <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
             <?php if ($taskQuarter): ?>
             <input type="hidden" name="quarter" value="<?= (int)$taskQuarter['quarter'] ?>">
             <input type="hidden" name="year" value="<?= (int)$taskQuarter['year'] ?>">
             <?php endif; ?>
-            <select class="uk-select" name="sprint_id" onchange="this.form.submit()">
+            <select class="uk-select" name="sprint_id" data-vk-autosubmit>
                 <option value=""><?= __('All sprints') ?></option>
                 <option value="-1" <?= (int)$sprintFilter === -1 ? 'selected' : '' ?>><?= __('No sprint') ?></option>
                 <?php foreach ($sprints as $s): ?>
@@ -287,13 +375,15 @@ ob_start();
             <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
             <?php if ($searchFilter): ?><input type="hidden" name="q" value="<?= htmlspecialchars($searchFilter) ?>"><?php endif; ?>
             <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($reviewerFilter): ?><input type="hidden" name="reviewer_id" value="<?= (int)$reviewerFilter ?>"><?php endif; ?>
+            <?php if ($collaboratorFilter): ?><input type="hidden" name="collaborator_id" value="<?= (int)$collaboratorFilter ?>"><?php endif; ?>
             <?php if ($sprintFilter): ?><input type="hidden" name="sprint_id" value="<?= (int)$sprintFilter ?>"><?php endif; ?>
             <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
             <?php if ($taskQuarter): ?>
             <input type="hidden" name="quarter" value="<?= (int)$taskQuarter['quarter'] ?>">
             <input type="hidden" name="year" value="<?= (int)$taskQuarter['year'] ?>">
             <?php endif; ?>
-            <select class="uk-select" name="sort" onchange="this.form.submit()">
+            <select class="uk-select" name="sort" data-vk-autosubmit>
                 <?php foreach ($sortLabels as $sortValue => $sortLabel): ?>
                 <option value="<?= htmlspecialchars($sortValue) ?>" <?= $sortFilter === $sortValue ? 'selected' : '' ?>><?= htmlspecialchars($sortLabel) ?></option>
                 <?php endforeach; ?>
@@ -327,6 +417,8 @@ ob_start();
             <?php if ($prioFilter): ?><input type="hidden" name="priority" value="<?= htmlspecialchars($prioFilter) ?>"><?php endif; ?>
             <?php if ($searchFilter): ?><input type="hidden" name="q" value="<?= htmlspecialchars($searchFilter) ?>"><?php endif; ?>
             <?php if ($assigneeFilter): ?><input type="hidden" name="assignee_id" value="<?= (int)$assigneeFilter ?>"><?php endif; ?>
+            <?php if ($reviewerFilter): ?><input type="hidden" name="reviewer_id" value="<?= (int)$reviewerFilter ?>"><?php endif; ?>
+            <?php if ($collaboratorFilter): ?><input type="hidden" name="collaborator_id" value="<?= (int)$collaboratorFilter ?>"><?php endif; ?>
             <?php if ($sortFilter !== 'default'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortFilter) ?>"><?php endif; ?>
             <?php if ($sprintFilter): ?><input type="hidden" name="sprint_id" value="<?= (int)$sprintFilter ?>"><?php endif; ?>
             <?php if ($taskDateState): ?><input type="hidden" name="date_state" value="<?= htmlspecialchars($taskDateState) ?>"><?php endif; ?>
@@ -398,13 +490,15 @@ ob_start();
     <div class="vk-pagination-wrap">
         <ul class="uk-pagination">
             <?php
-            $buildUrl = function($p) use ($url, $statusFilter, $prioFilter, $searchFilter, $sortFilter, $assigneeFilter, $sprintFilter, $taskQuarter, $taskDateState) {
+            $buildUrl = function($p) use ($url, $statusFilter, $prioFilter, $searchFilter, $sortFilter, $assigneeFilter, $reviewerFilter, $collaboratorFilter, $sprintFilter, $taskQuarter, $taskDateState) {
                 $parts = "view=tasks&page=$p";
                 if ($statusFilter) $parts .= "&status=$statusFilter";
                 if ($prioFilter)   $parts .= "&priority=$prioFilter";
                 if ($searchFilter) $parts .= "&q=" . urlencode($searchFilter);
                 if ($sortFilter !== 'default') $parts .= "&sort=" . urlencode($sortFilter);
                 if ($assigneeFilter) $parts .= "&assignee_id=$assigneeFilter";
+                if ($reviewerFilter) $parts .= "&reviewer_id=$reviewerFilter";
+                if ($collaboratorFilter) $parts .= "&collaborator_id=$collaboratorFilter";
                 if ($sprintFilter) $parts .= "&sprint_id=$sprintFilter";
                 if ($taskQuarter)  $parts .= "&quarter=" . (int)$taskQuarter['quarter'] . "&year=" . (int)$taskQuarter['year'];
                 if ($taskDateState) $parts .= "&date_state=" . urlencode($taskDateState);
@@ -437,6 +531,13 @@ ob_start();
 </div>
 <?php endif; ?>
 
+<script>
+(function() {
+    document.querySelectorAll('select[data-vk-autosubmit]').forEach(function(sel) {
+        sel.addEventListener('change', function() { if (sel.form) sel.form.submit(); });
+    });
+})();
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/_layout.php';
