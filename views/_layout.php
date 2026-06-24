@@ -3397,12 +3397,11 @@ body.dark-theme .vk-shell {
     min-width: 0;
 }
 
-.vk-task-card .vk-rich-editor .tox-tinymce {
-    height: 190px !important;
-    min-height: 118px;
+.vk-task-card .vk-rich-editor:not(.vk-note-editor) .tox-tinymce {
+    min-height: 190px;
 }
 
-.vk-task-card .vk-rich-editor textarea.vk-tinymce-editor {
+.vk-task-card .vk-rich-editor:not(.vk-note-editor) textarea.vk-tinymce-editor {
     min-height: 96px !important;
 }
 
@@ -3573,7 +3572,7 @@ body.dark-theme .vk-shell {
 }
 
 .vk-comment-editor .tox-tinymce {
-    height: 170px !important;
+    min-height: 170px;
 }
 
 .vk-time-card .uk-card-header {
