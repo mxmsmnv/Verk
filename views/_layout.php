@@ -363,6 +363,20 @@ body.dark-theme .vk-shell {
     white-space:nowrap;
 }
 
+/* Linked-page actions: separate them from the input above, and match the
+   Clear button to the chips it sits beside. */
+.vk-linked-page-actions {
+    margin-top: 10px;
+}
+
+.vk-linked-page-actions .uk-button {
+    border-radius: 999px;
+    font-size: .78rem;
+    line-height: 1.5;
+    min-height: 0;
+    padding: .18rem .55rem;
+}
+
 .vk-chip:hover {
     background:var(--pw-main-background);
     text-decoration: none;
@@ -2205,7 +2219,7 @@ body.dark-theme .vk-shell {
 .vk-task-workspace {
     display: grid;
     gap: 16px;
-    grid-template-columns: minmax(0, 760px) minmax(360px, 440px);
+    grid-template-columns: minmax(0, 760px) minmax(360px, 1fr);
 }
 
 .vk-task-main,
