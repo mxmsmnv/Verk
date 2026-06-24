@@ -195,6 +195,161 @@ ob_start();
             </div>
         </div>
         <?php endif; ?>
+
+        <?php
+        $workload = $this->getWorkloadByAssignee();
+        $wlConfig = [
+                'status' => [
+                    'keys'   => ['open', 'in_progress', 'review'],
+                    'labels' => [
+                        'open'        => $this->statusLabel('open'),
+                        'in_progress' => $this->statusLabel('in_progress'),
+                        'review'      => $this->statusLabel('review'),
+                    ],
+                ],
+                'priority' => [
+                    'keys'   => ['critical', 'high', 'medium', 'low'],
+                    'labels' => [
+                        'critical' => $this->priorityLabel('critical'),
+                        'high'     => $this->priorityLabel('high'),
+                        'medium'   => $this->priorityLabel('medium'),
+                        'low'      => $this->priorityLabel('low'),
+                    ],
+                ],
+            ];
+        ?>
+        <div class="uk-card uk-card-default vk-card-stack vk-dashboard-card vk-workload-card"
+             data-workload="<?= htmlspecialchars(json_encode($workload['assignees']), ENT_QUOTES) ?>"
+             data-workload-config="<?= htmlspecialchars(json_encode($wlConfig), ENT_QUOTES) ?>"
+             data-workload-missing="<?= $workload['missingEstimates'] ? '1' : '0' ?>">
+            <div class="uk-card-header vk-card-header-row">
+                <h3 class="vk-card-title"><?= __('Workload') ?></h3>
+                <div class="vk-workload-toggles">
+                    <div class="vk-seg" data-wl-toggle="metric">
+                        <button type="button" data-wl-value="count" class="is-active"><?= __('Count') ?></button>
+                        <button type="button" data-wl-value="hours"><?= __('Hours') ?></button>
+                    </div>
+                    <div class="vk-seg" data-wl-toggle="breakdown">
+                        <button type="button" data-wl-value="status" class="is-active"><?= __('Status') ?></button>
+                        <button type="button" data-wl-value="priority"><?= __('Priority') ?></button>
+                    </div>
+                </div>
+            </div>
+            <div class="uk-card-body">
+                <div class="vk-workload-legend" data-wl-legend></div>
+                <div class="vk-workload-rows" data-wl-rows></div>
+                <p class="vk-workload-hint" data-wl-hint hidden><?= __('Some open tasks have no estimate, so Hours understates the real load.') ?></p>
+            </div>
+        </div>
+        <script>
+        (function() {
+            const card = document.currentScript.previousElementSibling;
+            if (!card || !card.classList.contains('vk-workload-card')) return;
+            const data    = JSON.parse(card.dataset.workload || '[]');
+            const config  = JSON.parse(card.dataset.workloadConfig || '{}');
+            const missing = card.dataset.workloadMissing === '1';
+            const legendEl = card.querySelector('[data-wl-legend]');
+            const rowsEl   = card.querySelector('[data-wl-rows]');
+            const hintEl   = card.querySelector('[data-wl-hint]');
+            const T = { none: <?= json_encode(__('No open tasks.')) ?>, noEst: <?= json_encode(__('No estimates recorded yet.')) ?> };
+            let metric = 'count', breakdown = 'status';
+
+            const fmt = (v) => metric === 'hours'
+                ? (Math.round(v * 10) / 10) + 'h'
+                : String(v);
+            const bucketKey = () => 'by' + breakdown.charAt(0).toUpperCase() + breakdown.slice(1);
+
+            function render() {
+                const keys = config[breakdown].keys;
+                const labels = config[breakdown].labels;
+
+                if (!data.length) {
+                    legendEl.textContent = '';
+                    rowsEl.textContent = '';
+                    const msg = document.createElement('p');
+                    msg.className = 'vk-workload-empty';
+                    msg.textContent = T.none;
+                    rowsEl.appendChild(msg);
+                    hintEl.hidden = true;
+                    return;
+                }
+
+                const max = data.reduce((m, a) => Math.max(m, a[metric]), 0);
+
+                legendEl.textContent = '';
+                keys.forEach(k => {
+                    const item = document.createElement('span');
+                    item.className = 'vk-wl-legend-item';
+                    const sw = document.createElement('span');
+                    sw.className = 'vk-wl-swatch is-' + k;
+                    const lbl = document.createElement('span');
+                    lbl.textContent = labels[k];
+                    item.append(sw, lbl);
+                    legendEl.appendChild(item);
+                });
+
+                rowsEl.textContent = '';
+                if (max <= 0) {
+                    const msg = document.createElement('p');
+                    msg.className = 'vk-workload-empty';
+                    msg.textContent = metric === 'hours' ? T.noEst : T.none;
+                    rowsEl.appendChild(msg);
+                } else {
+                    const bucket = bucketKey();
+                    data.forEach(a => {
+                        const total = a[metric];
+                        const row = document.createElement('div');
+                        row.className = 'vk-wl-row';
+
+                        const name = document.createElement('span');
+                        name.className = 'vk-wl-name';
+                        name.textContent = a.name;
+                        name.title = a.name;
+
+                        const track = document.createElement('div');
+                        track.className = 'vk-wl-track';
+                        const bar = document.createElement('div');
+                        bar.className = 'vk-wl-bar';
+                        bar.style.width = (total / max * 100) + '%';
+                        keys.forEach(k => {
+                            const v = a[bucket][k][metric];
+                            if (v <= 0) return;
+                            const seg = document.createElement('span');
+                            seg.className = 'vk-wl-seg is-' + k;
+                            seg.style.width = (v / total * 100) + '%';
+                            seg.title = labels[k] + ': ' + fmt(v);
+                            bar.appendChild(seg);
+                        });
+                        track.appendChild(bar);
+
+                        const tot = document.createElement('span');
+                        tot.className = 'vk-wl-total';
+                        tot.textContent = fmt(total);
+
+                        row.append(name, track, tot);
+                        rowsEl.appendChild(row);
+                    });
+                }
+
+                hintEl.hidden = !(metric === 'hours' && missing);
+            }
+
+            card.querySelectorAll('[data-wl-toggle]').forEach(group => {
+                const kind = group.dataset.wlToggle;
+                group.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        group.querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+                        btn.classList.add('is-active');
+                        if (kind === 'metric') metric = btn.dataset.wlValue;
+                        else breakdown = btn.dataset.wlValue;
+                        render();
+                    });
+                });
+            });
+
+            render();
+        })();
+        </script>
     </div>
 
     <div class="vk-dashboard-side">

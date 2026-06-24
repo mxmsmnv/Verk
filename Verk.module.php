@@ -1487,6 +1487,65 @@ class Verk extends Process implements Module, ConfigurableModule {
         return $summary;
     }
 
+    /**
+     * Open-task workload per assignee for the dashboard chart. One grouped
+     * query; aggregated in PHP into counts and estimate hours for both the
+     * status and priority breakdowns. Unassigned tasks fold into id 0.
+     *
+     * @return array{assignees: array<int, array>, missingEstimates: bool}
+     */
+    public function getWorkloadByAssignee(): array {
+        $statuses   = ['open', 'in_progress', 'review'];
+        $priorities = ['critical', 'high', 'medium', 'low'];
+
+        $stmt = $this->wire('database')->query(
+            "SELECT assignee_id, status, priority, COUNT(*) AS cnt, SUM(COALESCE(estimate_h, 0)) AS hrs
+             FROM vk_tasks
+             WHERE status != 'done'
+             GROUP BY assignee_id, status, priority"
+        );
+
+        $rows = [];
+        $missingEstimates = false;
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+            $aid = (int)$r['assignee_id'];
+            if (!isset($rows[$aid])) {
+                $rows[$aid] = [
+                    'count'      => 0,
+                    'hours'      => 0.0,
+                    'byStatus'   => array_fill_keys($statuses, ['count' => 0, 'hours' => 0.0]),
+                    'byPriority' => array_fill_keys($priorities, ['count' => 0, 'hours' => 0.0]),
+                ];
+            }
+            $cnt = (int)$r['cnt'];
+            $hrs = (float)$r['hrs'];
+            $st  = in_array($r['status'], $statuses, true) ? $r['status'] : 'open';
+            $pr  = in_array($r['priority'], $priorities, true) ? $r['priority'] : 'medium';
+            if ($hrs <= 0) $missingEstimates = true;
+
+            $rows[$aid]['count'] += $cnt;
+            $rows[$aid]['hours'] += $hrs;
+            $rows[$aid]['byStatus'][$st]['count']   += $cnt;
+            $rows[$aid]['byStatus'][$st]['hours']   += $hrs;
+            $rows[$aid]['byPriority'][$pr]['count'] += $cnt;
+            $rows[$aid]['byPriority'][$pr]['hours'] += $hrs;
+        }
+
+        $out = [];
+        foreach ($rows as $aid => $data) {
+            if ($aid === 0) {
+                $name = $this->_('Unassigned');
+            } else {
+                $u = $this->wire('users')->get($aid);
+                $name = ($u && $u->id) ? $u->name : sprintf('User #%d', $aid);
+            }
+            $out[] = ['id' => $aid, 'name' => $name] + $data;
+        }
+        usort($out, fn(array $a, array $b): int => $b['count'] <=> $a['count']);
+
+        return ['assignees' => $out, 'missingEstimates' => $missingEstimates];
+    }
+
     protected function getConfig(): array {
         $saved = $this->wire('modules')->getConfig($this);
         return array_merge(self::getDefaultConfig(), is_array($saved) ? $saved : []);
