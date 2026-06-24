@@ -3305,6 +3305,84 @@ body.dark-theme .vk-shell {
     color: var(--vk-accent);
 }
 
+/* Reviewers picker: a native "add" dropdown plus a removable chip list
+   (self-contained — no Select2 / PW Inputfield wrapper). */
+.vk-reviewers-field {
+    min-width: 0; /* direct grid item — let it shrink to its column */
+}
+
+.vk-rev-add {
+    max-width: 100%;
+    width: 100%;
+}
+
+.vk-rev-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.vk-rev-list:empty {
+    margin-top: 0;
+}
+
+.vk-rev-chip {
+    align-items: center;
+    background: var(--vk-muted-surface);
+    border: 1px solid var(--vk-border);
+    border-radius: var(--vk-radius-sm);
+    color: var(--vk-text);
+    display: flex;
+    gap: 8px;
+    padding: 4px 8px;
+}
+
+.vk-rev-name {
+    flex: 1 1 auto;
+    font-size: .85rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vk-rev-remove {
+    background: none;
+    border: 0;
+    color: var(--vk-muted);
+    cursor: pointer;
+    flex: 0 0 auto;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 2px;
+}
+
+.vk-rev-remove:hover {
+    color: #c0392b;
+}
+
+/* Review decision (Approve / Request changes) — compact buttons with breathing
+   room around the group. */
+.vk-review-decision {
+    margin: 0 0 14px;
+}
+
+.vk-review-decision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.vk-review-decision-actions .uk-button {
+    font-size: .78rem;
+    height: 30px;
+    line-height: 28px;
+    min-height: 0;
+    padding: 0 12px;
+}
+
 .vk-inline-delete {
     display: inline;
     margin: 0 0 0 auto;
