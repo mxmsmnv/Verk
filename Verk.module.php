@@ -26,7 +26,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             'href'     => 'https://smnv.org',
             'icon'     => 'dashboard',
             'singular' => true,
-            'autoload' => true,
+            'autoload' => 'template=admin',
             'requires' => ['ProcessWire>=3.0.200', 'PHP>=8.0'],
             'permission'  => 'verk',
             'permissions' => ['verk' => 'Use the Verk site operations panel'],
