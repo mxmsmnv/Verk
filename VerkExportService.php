@@ -80,7 +80,7 @@ class VerkExportService {
         $db     = $this->wire->database;
         $where  = ['1=1'];
         $params = [];
-        if ($status)   { $where[] = 't.status=:status';       $params[':status']    = $status; }
+        if ($status !== '') { $where[] = $this->module->taskStatusWhere($status, $params); }
         if ($priority) { $where[] = 't.priority=:priority';   $params[':priority']  = $priority; }
         if ($assigneeId === -1) { $where[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $where[] = 't.assignee_id=:assignee_id'; $params[':assignee_id'] = $assigneeId; }

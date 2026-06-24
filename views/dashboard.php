@@ -88,10 +88,10 @@ ob_start();
 </section>
 
 <div class="vk-dashboard-stats">
-    <div><a href="<?= $url ?>?view=tasks&status=open" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= __('Open') ?></div><div class="vk-stat-n"><?= $open ?></div><span class="vk-stat-note"><?= __('Needs attention') ?></span></a></div>
+    <div><a href="<?= $url ?>?view=tasks&status=active" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= __('Active') ?></div><div class="vk-stat-n"><?= $open ?></div><span class="vk-stat-note"><?= __('Needs attention') ?></span></a></div>
     <div><a href="<?= $url ?>?view=tasks&status=done" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= __('Done') ?></div><div class="vk-stat-n"><?= $done ?></div><span class="vk-stat-note"><?= __('Completed tasks') ?></span></a></div>
     <div><a href="<?= $url ?>?view=calendar" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= __('Upcoming') ?></div><div class="vk-stat-n"><?= (int)($upcomingTotal ?? count($upcoming)) ?></div><span class="vk-stat-note"><?= __('Next 14 days') ?></span></a></div>
-    <div><a href="<?= $url ?>?view=tasks&quarter=<?= (int)$dashboardQuarter['quarter'] ?>&year=<?= (int)$dashboardQuarter['year'] ?>&sort=due" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= htmlspecialchars($quarterLabel) ?></div><div class="vk-stat-n"><?= (int)$quarterTaskStats['open_count'] ?></div><span class="vk-stat-note"><?= __('Open due this quarter') ?></span></a></div>
+    <div><a href="<?= $url ?>?view=tasks&status=active&quarter=<?= (int)$dashboardQuarter['quarter'] ?>&year=<?= (int)$dashboardQuarter['year'] ?>&sort=due" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small"><div class="vk-stat-l"><?= htmlspecialchars($quarterLabel) ?></div><div class="vk-stat-n"><?= (int)$quarterTaskStats['open_count'] ?></div><span class="vk-stat-note"><?= __('Active due this quarter') ?></span></a></div>
     <?php foreach ($auditSummary as $a): ?>
     <div><a href="<?= $url ?>?view=audit&rule=<?= (int)$a['index'] ?>" class="vk-stat vk-stat-link uk-card uk-card-default uk-card-small">
         <div class="vk-stat-l" title="<?= htmlspecialchars($a['label']) ?>"><?= __('Audit') ?></div>
@@ -118,7 +118,7 @@ ob_start();
         <span><?= __('Unassigned') ?></span>
         <strong><?= (int)$unassignedTaskCount ?></strong>
     </a>
-    <a href="<?= $url ?>?view=tasks&quarter=<?= (int)$dashboardQuarter['quarter'] ?>&year=<?= (int)$dashboardQuarter['year'] ?>&sort=due" class="vk-dashboard-queue-item">
+    <a href="<?= $url ?>?view=tasks&status=active&quarter=<?= (int)$dashboardQuarter['quarter'] ?>&year=<?= (int)$dashboardQuarter['year'] ?>&sort=due" class="vk-dashboard-queue-item">
         <span><?= __('Due this quarter') ?></span>
         <strong><?= (int)$quarterTaskStats['open_count'] ?></strong>
     </a>
