@@ -10,7 +10,7 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 134
+ * @version 135
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -20,7 +20,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 134,
+            'version'  => 135,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -281,6 +281,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 'delete_note'    => $this->actionDeleteNote(),
                 'save_comment'   => $this->actionSaveComment(),
                 'delete_comment' => $this->actionDeleteComment(),
+                'review_decision' => $this->actionReviewDecision(),
                 'save_audit_rules' => $this->actionSaveAuditRules(),
                 'save_settings'    => $this->actionSaveSettings(),
                 'save_sprint'      => $this->actionSaveSprint(),
@@ -352,6 +353,28 @@ class Verk extends Process implements Module, ConfigurableModule {
         );
         $stmt->execute([':uid' => $uid]);
         $myTasks = $this->enrichTaskPagesBatch($stmt->fetchAll(\PDO::FETCH_ASSOC));
+
+        // My reviews — tasks in review where the current user is a reviewer
+        $stmt = $db->prepare(
+            "SELECT t.* FROM vk_tasks t
+             JOIN vk_task_reviewers r ON r.task_id = t.id
+             WHERE r.user_id = :uid AND t.status = 'review'
+             ORDER BY FIELD(t.priority,'critical','high','medium','low'), t.due_date IS NULL ASC, t.due_date ASC
+             LIMIT 8"
+        );
+        $stmt->execute([':uid' => $uid]);
+        $myReviews = $this->enrichTaskPagesBatch($stmt->fetchAll(\PDO::FETCH_ASSOC));
+
+        // Collaborating on — open tasks where the current user is a collaborator
+        $stmt = $db->prepare(
+            "SELECT t.* FROM vk_tasks t
+             JOIN vk_task_collaborators c ON c.task_id = t.id
+             WHERE c.user_id = :uid AND t.status != 'done'
+             ORDER BY FIELD(t.priority,'critical','high','medium','low'), t.due_date IS NULL ASC, t.due_date ASC
+             LIMIT 8"
+        );
+        $stmt->execute([':uid' => $uid]);
+        $myCollaborations = $this->enrichTaskPagesBatch($stmt->fetchAll(\PDO::FETCH_ASSOC));
 
         // Recent tasks (all) — paginated
         $recentPage    = max(1, (int)$input->get('recent_page', 'int') ?: 1);
@@ -442,6 +465,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $status   = in_array($input->get('status', 'string'), $validStatus, true) ? $input->get('status', 'string') : '';
         $prio     = in_array($input->get('priority', 'string'), $validPrio, true)  ? $input->get('priority', 'string') : '';
         $assigneeId = (int)$input->get('assignee_id');
+        $reviewerId = (int)$input->get('reviewer_id');
+        $collaboratorId = (int)$input->get('collaborator_id');
         $sprintId = (int)$input->get('sprint_id');
         $search   = trim(substr($input->get('q', 'string') ?: '', 0, 120));
         $sort      = $input->get('sort', 'string') ?: 'default';
@@ -468,6 +493,10 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($prio)     { $where[] = 't.priority = :prio';       $params[':prio']   = $prio; }
         if ($assigneeId === -1) { $where[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $where[] = 't.assignee_id = :assignee_id'; $params[':assignee_id'] = $assigneeId; }
+        if ($reviewerId === -1) { $where[] = 'NOT EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id)'; }
+        elseif ($reviewerId > 0) { $where[] = 'EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id AND r.user_id = :reviewer_id)'; $params[':reviewer_id'] = $reviewerId; }
+        if ($collaboratorId === -1) { $where[] = 'NOT EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id)'; }
+        elseif ($collaboratorId > 0) { $where[] = 'EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id AND c.user_id = :collaborator_id)'; $params[':collaborator_id'] = $collaboratorId; }
         if ($sprintId === -1) { $where[] = '(t.sprint_id IS NULL OR t.sprint_id = 0)'; }
         elseif ($sprintId > 0) { $where[] = 't.sprint_id = :sprint_id'; $params[':sprint_id'] = $sprintId; }
         if ($search) {
@@ -491,6 +520,10 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($prio)     { $quarterBaseWhere[] = 't.priority = :prio';       $quarterBaseParams[':prio'] = $prio; }
         if ($assigneeId === -1) { $quarterBaseWhere[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $quarterBaseWhere[] = 't.assignee_id = :assignee_id'; $quarterBaseParams[':assignee_id'] = $assigneeId; }
+        if ($reviewerId === -1) { $quarterBaseWhere[] = 'NOT EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id)'; }
+        elseif ($reviewerId > 0) { $quarterBaseWhere[] = 'EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id AND r.user_id = :reviewer_id)'; $quarterBaseParams[':reviewer_id'] = $reviewerId; }
+        if ($collaboratorId === -1) { $quarterBaseWhere[] = 'NOT EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id)'; }
+        elseif ($collaboratorId > 0) { $quarterBaseWhere[] = 'EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id AND c.user_id = :collaborator_id)'; $quarterBaseParams[':collaborator_id'] = $collaboratorId; }
         if ($sprintId === -1) { $quarterBaseWhere[] = '(t.sprint_id IS NULL OR t.sprint_id = 0)'; }
         elseif ($sprintId > 0) { $quarterBaseWhere[] = 't.sprint_id = :sprint_id'; $quarterBaseParams[':sprint_id'] = $sprintId; }
         if ($search) {
@@ -527,6 +560,10 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($prio)     { $statusBaseWhere[] = 't.priority = :prio';       $statusBaseParams[':prio'] = $prio; }
         if ($assigneeId === -1) { $statusBaseWhere[] = '(t.assignee_id IS NULL OR t.assignee_id = 0)'; }
         elseif ($assigneeId > 0) { $statusBaseWhere[] = 't.assignee_id = :assignee_id'; $statusBaseParams[':assignee_id'] = $assigneeId; }
+        if ($reviewerId === -1) { $statusBaseWhere[] = 'NOT EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id)'; }
+        elseif ($reviewerId > 0) { $statusBaseWhere[] = 'EXISTS (SELECT 1 FROM vk_task_reviewers r WHERE r.task_id = t.id AND r.user_id = :reviewer_id)'; $statusBaseParams[':reviewer_id'] = $reviewerId; }
+        if ($collaboratorId === -1) { $statusBaseWhere[] = 'NOT EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id)'; }
+        elseif ($collaboratorId > 0) { $statusBaseWhere[] = 'EXISTS (SELECT 1 FROM vk_task_collaborators c WHERE c.task_id = t.id AND c.user_id = :collaborator_id)'; $statusBaseParams[':collaborator_id'] = $collaboratorId; }
         if ($sprintId === -1) { $statusBaseWhere[] = '(t.sprint_id IS NULL OR t.sprint_id = 0)'; }
         elseif ($sprintId > 0) { $statusBaseWhere[] = 't.sprint_id = :sprint_id'; $statusBaseParams[':sprint_id'] = $sprintId; }
         if ($search) {
@@ -585,6 +622,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $users   = $this->getAllUsers($assigneeId > 0 ? [$assigneeId] : []);
         $sprints = $this->getAllSprints();
         $currentAssigneeId = $assigneeId;
+        $currentReviewerId = $reviewerId;
+        $currentCollaboratorId = $collaboratorId;
         $currentSprintId = $sprintId;
         $currentTaskDateState = $taskDateState;
         ob_start(); require __DIR__ . '/views/tasks.php'; return ob_get_clean();
@@ -614,6 +653,24 @@ class Verk extends Process implements Module, ConfigurableModule {
             unset($c);
             $pageId = $task['page_id'];
 
+            $revStmt = $db->prepare("SELECT user_id FROM vk_task_reviewers WHERE task_id = :tid");
+            $revStmt->execute([':tid' => $id]);
+            $task['reviewer_ids'] = array_map('intval', $revStmt->fetchAll(\PDO::FETCH_COLUMN));
+            $revMap = $this->getUserMap($task['reviewer_ids']);
+            $task['reviewers'] = array_map(
+                fn(int $rid): array => ['id' => $rid, 'name' => $revMap[$rid] ?? ('#' . $rid)],
+                $task['reviewer_ids']
+            );
+
+            $colStmt = $db->prepare("SELECT user_id FROM vk_task_collaborators WHERE task_id = :tid");
+            $colStmt->execute([':tid' => $id]);
+            $task['collaborator_ids'] = array_map('intval', $colStmt->fetchAll(\PDO::FETCH_COLUMN));
+            $colMap = $this->getUserMap($task['collaborator_ids']);
+            $task['collaborators'] = array_map(
+                fn(int $cid): array => ['id' => $cid, 'name' => $colMap[$cid] ?? ('#' . $cid)],
+                $task['collaborator_ids']
+            );
+
             // Time logs
             $tlStmt = $db->prepare(
                 "SELECT tl.* FROM vk_time_logs tl
@@ -637,7 +694,11 @@ class Verk extends Process implements Module, ConfigurableModule {
             if ($lp->id) $linkedPage = $lp;
         }
 
-        $users = $this->getAllUsers(!empty($task['assignee_id']) ? [(int)$task['assignee_id']] : []);
+        $includeUserIds = [];
+        if (!empty($task['assignee_id'])) $includeUserIds[] = (int) $task['assignee_id'];
+        if (!empty($task['reviewer_ids'])) $includeUserIds = array_merge($includeUserIds, $task['reviewer_ids']);
+        if (!empty($task['collaborator_ids'])) $includeUserIds = array_merge($includeUserIds, $task['collaborator_ids']);
+        $users = $this->getAllUsers($includeUserIds);
         $sections = $this->wire('database')
             ->query("SELECT DISTINCT section FROM vk_tasks WHERE section != '' ORDER BY section")
             ->fetchAll(\PDO::FETCH_COLUMN);
@@ -913,6 +974,31 @@ class Verk extends Process implements Module, ConfigurableModule {
             $this->message($this->_('Task created.'));
         }
 
+        // Sync reviewers (many-to-many); keep only ids in the assignable pool.
+        $allowedIds = array_map('intval', array_column($this->getAllUsers(), 'id'));
+        $reviewerIds = [];
+        foreach ((array) $input->post('reviewer_ids') as $rid) {
+            $rid = (int) $rid;
+            if ($rid > 0 && in_array($rid, $allowedIds, true)) $reviewerIds[$rid] = $rid;
+        }
+        $db->prepare("DELETE FROM vk_task_reviewers WHERE task_id = :tid")->execute([':tid' => $id]);
+        if ($reviewerIds) {
+            $ins = $db->prepare("INSERT INTO vk_task_reviewers (task_id, user_id) VALUES (:tid, :uid)");
+            foreach ($reviewerIds as $rid) $ins->execute([':tid' => $id, ':uid' => $rid]);
+        }
+
+        // Sync collaborators (many-to-many); keep only ids in the assignable pool.
+        $collaboratorIds = [];
+        foreach ((array) $input->post('collaborator_ids') as $cid) {
+            $cid = (int) $cid;
+            if ($cid > 0 && in_array($cid, $allowedIds, true)) $collaboratorIds[$cid] = $cid;
+        }
+        $db->prepare("DELETE FROM vk_task_collaborators WHERE task_id = :tid")->execute([':tid' => $id]);
+        if ($collaboratorIds) {
+            $insC = $db->prepare("INSERT INTO vk_task_collaborators (task_id, user_id) VALUES (:tid, :uid)");
+            foreach ($collaboratorIds as $cid) $insC->execute([':tid' => $id, ':uid' => $cid]);
+        }
+
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('task-edit', $id);
     }
@@ -1020,6 +1106,43 @@ class Verk extends Process implements Module, ConfigurableModule {
         $c = $stmt->fetch(\PDO::FETCH_ASSOC);
         if ($c && ($user->isSuperuser() || $c['user_id'] == $user->id)) {
             $db->prepare("DELETE FROM vk_comments WHERE id=:id")->execute([':id'=>$id]);
+        }
+        $this->wire('session')->redirect($back);
+        return '';
+    }
+
+    protected function actionReviewDecision(): string {
+        $this->requireCSRF();
+        $input  = $this->wire('input');
+        $db     = $this->wire('database');
+        $user   = $this->wire('user');
+        $taskId = (int) $input->post('task_id');
+        $decision = (string) $input->post('decision', 'string');
+        $text   = $this->sanRichText($input->post('text', 'string'));
+        $back = $this->safeLocalUrl($input->post('back', 'string') ?: '') ?: $this->page->url . '?view=task-edit&id=' . $taskId;
+
+        if (!in_array($decision, ['approved', 'changes_requested'], true)) {
+            $this->wire('session')->redirect($back);
+            return '';
+        }
+        $task = $taskId ? $this->getTask($taskId) : null;
+        if (!$task) {
+            $this->error($this->_('Task does not exist.'));
+            $this->wire('session')->redirect($back);
+            return '';
+        }
+
+        $db->prepare("INSERT INTO vk_comments (task_id, user_id, text, kind, created_at) VALUES (:tid, :uid, :text, :kind, NOW())")
+           ->execute([':tid' => $taskId, ':uid' => $user->id, ':text' => $text, ':kind' => $decision]);
+
+        if ($task['status'] === 'review') {
+            $newStatus = $decision === 'approved' ? 'done' : 'in_progress';
+            $db->prepare("UPDATE vk_tasks SET status = :s WHERE id = :id")->execute([':s' => $newStatus, ':id' => $taskId]);
+            $this->message($decision === 'approved'
+                ? $this->_('Review approved; task marked done.')
+                : $this->_('Changes requested; task moved to In Progress.'));
+        } else {
+            $this->message($this->_('Review decision recorded.'));
         }
         $this->wire('session')->redirect($back);
         return '';
@@ -2840,15 +2963,11 @@ class Verk extends Process implements Module, ConfigurableModule {
     }
 
     /**
-     * Render the reviewers picker as a self-contained widget: a native "add"
-     * dropdown plus a removable chip list. No third-party enhancement (Select2)
-     * or PW Inputfield wrapper, so it renders consistently and styles cleanly.
-     * Each chosen reviewer submits a hidden reviewer_ids[] field.
-     *
-     * @param array $users    [['id'=>int,'name'=>string], …] assignable pool
-     * @param array $selected int[] currently-selected reviewer ids (in order)
+     * Self-contained people-picker: a native "add" dropdown + removable chip
+     * rows, each chip carrying a hidden {$field}[] input. Used for reviewers and
+     * collaborators. No third-party enhancement.
      */
-    public function renderReviewerSelect(array $users, array $selected): string {
+    public function renderPeopleSelect(string $field, array $users, array $selected, string $addLabel, string $removeLabel): string {
         $selected = array_map('intval', $selected);
         $selectedSet = array_flip($selected);
         $esc = fn($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
@@ -2856,40 +2975,43 @@ class Verk extends Process implements Module, ConfigurableModule {
         $nameById = [];
         foreach ($users as $u) $nameById[(int) $u['id']] = (string) $u['name'];
 
-        // Add-dropdown: everyone not already selected.
-        $options = '<option value="">' . $esc($this->_('Add reviewer…')) . '</option>';
+        $options = '<option value="">' . $esc($addLabel . '…') . '</option>';
         foreach ($users as $u) {
             $id = (int) $u['id'];
             if (isset($selectedSet[$id])) continue;
             $options .= '<option value="' . $id . '">' . $esc($u['name']) . '</option>';
         }
 
-        // Chips for the currently-selected reviewers, in selection order.
         $chips = '';
         foreach ($selected as $id) {
-            $chips .= $this->reviewerChip($id, $nameById[$id] ?? ('#' . $id));
+            $chips .= $this->peopleChip($field, $id, $nameById[$id] ?? ('#' . $id), $removeLabel);
         }
 
-        $out  = '<div class="vk-rev" data-rev data-remove-label="' . $esc($this->_('Remove reviewer')) . '">';
-        $out .= '<select class="uk-select vk-rev-add" data-rev-add aria-label="' . $esc($this->_('Add reviewer')) . '">' . $options . '</select>';
+        $out  = '<div class="vk-rev" data-rev data-field="' . $esc($field) . '" data-remove-label="' . $esc($removeLabel) . '">';
+        $out .= '<select class="uk-select vk-rev-add" data-rev-add aria-label="' . $esc($addLabel) . '">' . $options . '</select>';
         $out .= '<div class="vk-rev-list" data-rev-list>' . $chips . '</div>';
         $out .= '</div>';
-        $out .= $this->reviewerWidgetScript();
+        $out .= $this->peopleWidgetScript();
         return $out;
     }
 
-    /** One selected-reviewer chip (server-rendered; mirrors the JS makeChip). */
-    protected function reviewerChip(int $id, string $name): string {
+    /** Reviewers picker — thin wrapper over the shared people-picker. */
+    public function renderReviewerSelect(array $users, array $selected): string {
+        return $this->renderPeopleSelect('reviewer_ids', $users, $selected, $this->_('Add reviewer'), $this->_('Remove reviewer'));
+    }
+
+    /** One selected-person chip (server-rendered; mirrors the JS makeChip). */
+    protected function peopleChip(string $field, int $id, string $name, string $removeLabel): string {
         $esc = fn($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
         return '<span class="vk-rev-chip" data-id="' . $id . '">'
             . '<span class="vk-rev-name">' . $esc($name) . '</span>'
-            . '<button type="button" class="vk-rev-remove" data-rev-remove aria-label="' . $esc($this->_('Remove reviewer')) . '">&times;</button>'
-            . '<input type="hidden" name="reviewer_ids[]" value="' . $id . '">'
+            . '<button type="button" class="vk-rev-remove" data-rev-remove aria-label="' . $esc($removeLabel) . '">&times;</button>'
+            . '<input type="hidden" name="' . $esc($field) . '[]" value="' . $id . '">'
             . '</span>';
     }
 
-    /** Inline script powering the reviewers widget (add/remove, no navigation). */
-    protected function reviewerWidgetScript(): string {
+    /** Inline script powering the people-picker widget (add/remove, no navigation). */
+    protected function peopleWidgetScript(): string {
         return <<<'JS'
 <script>
 (function () {
@@ -2898,6 +3020,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     var add = root.querySelector('[data-rev-add]');
     var list = root.querySelector('[data-rev-list]');
     var removeLabel = root.getAttribute('data-remove-label') || 'Remove';
+    var field = root.getAttribute('data-field') || '';
 
     function makeChip(id, name) {
         var chip = document.createElement('span');
@@ -2914,7 +3037,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         btn.textContent = '×';
         var hid = document.createElement('input');
         hid.type = 'hidden';
-        hid.name = 'reviewer_ids[]';
+        hid.name = field + '[]';
         hid.value = id;
         chip.appendChild(n);
         chip.appendChild(btn);

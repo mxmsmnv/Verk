@@ -66,6 +66,7 @@ class VerkDB {
                 `task_id`    INT UNSIGNED NOT NULL,
                 `user_id`    INT UNSIGNED NOT NULL,
                 `text`       TEXT NOT NULL,
+                `kind`       ENUM('comment','approved','changes_requested') NOT NULL DEFAULT 'comment',
                 `created_at` DATETIME NOT NULL,
                 PRIMARY KEY (`id`),
                 KEY `task_id` (`task_id`)
@@ -105,10 +106,28 @@ class VerkDB {
                 KEY `entity` (`entity_type`, `entity_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_task_reviewers` (
+                `task_id` INT UNSIGNED NOT NULL,
+                `user_id` INT UNSIGNED NOT NULL,
+                PRIMARY KEY (`task_id`, `user_id`),
+                KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_task_collaborators` (
+                `task_id` INT UNSIGNED NOT NULL,
+                `user_id` INT UNSIGNED NOT NULL,
+                PRIMARY KEY (`task_id`, `user_id`),
+                KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
     }
 
     public static function uninstall($db, ?string $assetsDir = null): void {
-        foreach (['vk_time_logs', 'vk_comments', 'vk_tasks', 'vk_sprints', 'vk_notes', 'vk_files'] as $t) {
+        foreach (['vk_time_logs', 'vk_comments', 'vk_tasks', 'vk_sprints', 'vk_notes', 'vk_files', 'vk_task_reviewers', 'vk_task_collaborators'] as $t) {
             $db->exec("DROP TABLE IF EXISTS `$t`");
         }
         if ($assetsDir && is_dir($assetsDir)) {
@@ -200,5 +219,34 @@ class VerkDB {
                 KEY `entity` (`entity_type`, `entity_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+
+        // vk_task_reviewers — added for the review workflow
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_task_reviewers` (
+                `task_id` INT UNSIGNED NOT NULL,
+                `user_id` INT UNSIGNED NOT NULL,
+                PRIMARY KEY (`task_id`, `user_id`),
+                KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+
+        // vk_task_collaborators — added for task collaboration
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `vk_task_collaborators` (
+                `task_id` INT UNSIGNED NOT NULL,
+                `user_id` INT UNSIGNED NOT NULL,
+                PRIMARY KEY (`task_id`, `user_id`),
+                KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+
+        // vk_comments.kind — review-decision tag
+        $commentCols = [];
+        foreach ($db->query("SHOW COLUMNS FROM `vk_comments`")->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+            $commentCols[] = $r['Field'];
+        }
+        if (!in_array('kind', $commentCols)) {
+            $db->exec("ALTER TABLE `vk_comments` ADD COLUMN `kind` ENUM('comment','approved','changes_requested') NOT NULL DEFAULT 'comment' AFTER `text`");
+        }
     }
 }

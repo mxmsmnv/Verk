@@ -27,6 +27,10 @@ foreach ($users as $taskUser) {
         break;
     }
 }
+$reviewerIds = array_map('intval', $task['reviewer_ids'] ?? []);
+$reviewerNames = implode(', ', array_map(fn(array $r): string => (string) $r['name'], $task['reviewers'] ?? []));
+$collaboratorIds = array_map('intval', $task['collaborator_ids'] ?? []);
+$collaboratorNames = implode(', ', array_map(fn(array $c): string => (string) $c['name'], $task['collaborators'] ?? []));
 $sprintName = __('No sprint');
 foreach ($sprints as $taskSprint) {
     if ((int)$taskSprint['id'] === (int)($t['sprint_id'] ?? 0)) {
@@ -86,6 +90,7 @@ ob_start();
         </div>
         <dl class="vk-issue-meta">
             <div><dt><?= __('Assignee') ?></dt><dd><?= htmlspecialchars($assigneeName) ?></dd></div>
+            <div><dt><?= __('Collaborators') ?></dt><dd<?= $collaboratorNames ? ' uk-tooltip="' . htmlspecialchars($collaboratorNames, ENT_QUOTES) . '"' : '' ?>><?= $collaboratorNames ? htmlspecialchars($collaboratorNames) : __('None') ?></dd></div>
             <div><dt><?= __('Reviewers') ?></dt><dd<?= $reviewerNames ? ' uk-tooltip="' . htmlspecialchars($reviewerNames, ENT_QUOTES) . '"' : '' ?>><?= $reviewerNames ? htmlspecialchars($reviewerNames) : __('None') ?></dd></div>
             <div><dt><?= __('Due date') ?></dt><dd><?= htmlspecialchars($t['due_date'] ?: __('Not set')) ?></dd></div>
             <div><dt><?= __('Quarter') ?></dt><dd><?= htmlspecialchars($dueQuarterLabel ?: __('Not set')) ?></dd></div>
@@ -191,6 +196,16 @@ ob_start();
                                     </select>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="vk-field vk-reviewers-field">
+                            <label class="uk-form-label"><?= __('Collaborators') ?></label>
+                            <?= $this->renderPeopleSelect('collaborator_ids', $users, $collaboratorIds, __('Add collaborator'), __('Remove collaborator')) ?>
+                        </div>
+
+                        <div class="vk-field vk-reviewers-field">
+                            <label class="uk-form-label"><?= __('Reviewers') ?></label>
+                            <?= $this->renderReviewerSelect($users, $reviewerIds) ?>
                         </div>
 
                         <div class="vk-form-grid is-2">
@@ -315,12 +330,29 @@ ob_start();
         <div class="uk-card uk-card-default vk-discussion-card">
             <div class="uk-card-header"><h3 class="vk-card-title"><?= __('Discussion') ?></h3></div>
             <div class="uk-card-body">
+                <?php if ($isEdit && $t['status'] === 'review'): ?>
+                <form method="post" action="<?= $url ?>" class="vk-review-decision">
+                    <input type="hidden" name="<?= $csrfN ?>" value="<?= $csrf ?>">
+                    <input type="hidden" name="action" value="review_decision">
+                    <input type="hidden" name="task_id" value="<?= $t['id'] ?>">
+                    <input type="hidden" name="back" value="<?= htmlspecialchars($backUrl) ?>">
+                    <label class="uk-form-label"><?= __('Review decision') ?></label>
+                    <textarea name="text" class="uk-textarea" rows="2" placeholder="<?= __('Optional note…') ?>"></textarea>
+                    <div class="vk-review-decision-actions">
+                        <button type="submit" name="decision" value="approved" class="uk-button uk-button-primary uk-button-small"><i class="fa fa-check"></i> <?= __('Approve') ?></button>
+                        <button type="submit" name="decision" value="changes_requested" class="uk-button uk-button-default uk-button-small"><i class="fa fa-undo"></i> <?= __('Request changes') ?></button>
+                    </div>
+                </form>
+                <?php endif; ?>
                 <?php if (!empty($task['comments'])): ?>
                 <div class="vk-comment-list">
                     <?php foreach ($task['comments'] as $c): ?>
                     <div class="vk-comment">
                         <div class="vk-comment-head">
                             <span class="vk-comment-author"><?= htmlspecialchars($c['author_name']) ?></span>
+                            <?php $cKind = $c['kind'] ?? 'comment'; ?>
+                            <?php if ($cKind === 'approved'): ?><span class="uk-label vk-label vk-label-done"><?= __('Approved') ?></span>
+                            <?php elseif ($cKind === 'changes_requested'): ?><span class="uk-label vk-label vk-label-review"><?= __('Changes requested') ?></span><?php endif; ?>
                             <span class="vk-comment-date"><?= $c['created_at'] ?></span>
                             <?php if ($curUser->isSuperuser() || $c['user_id'] == $curUser->id): ?>
                             <form method="post" action="<?= $url ?>" class="vk-inline-delete">

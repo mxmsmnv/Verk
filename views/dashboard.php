@@ -2,6 +2,8 @@
 /**
  * @var Verk $this
  * @var array $myTasks
+ * @var array $myReviews
+ * @var array $myCollaborations
  * @var array $recentTasks
  * @var array $upcoming
  * @var array $auditSummary
@@ -173,6 +175,66 @@ ob_start();
             <div class="uk-card-body vk-dashboard-empty">
                 <i class="fa fa-check-circle-o"></i>
                 <span><?= __('All clear') ?></span>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="uk-card uk-card-default vk-card-stack vk-dashboard-card">
+            <div class="uk-card-header vk-card-header-row">
+                <h3 class="vk-card-title"><?= __('Collaborating On') ?></h3>
+                <a href="<?= $url ?>?view=tasks&collaborator_id=<?= (int)$uid ?>" class="vk-card-action"><?= __('All mine') ?> <i class="fa fa-arrow-right"></i></a>
+            </div>
+            <?php if (!empty($myCollaborations)): ?>
+            <div class="vk-mini-list">
+                <?php foreach ($myCollaborations as $c): ?>
+                <article class="vk-mini-row">
+                    <div class="vk-mini-main">
+                        <a href="<?= $url ?>?view=task-edit&id=<?= (int)$c['id'] ?>&return_url=<?= $dashboardReturnParam ?>" class="vk-mini-title"><?= htmlspecialchars($c['title']) ?></a>
+                        <div class="vk-mini-meta">
+                            <span><?= __('TASK') ?>-<?= (int)$c['id'] ?></span>
+                            <?php if ($c['due_date']): ?><span class="<?= $c['due_date'] < $today ? 'is-overdue' : '' ?>"><?= htmlspecialchars($c['due_date']) ?></span><?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="vk-mini-side">
+                        <span class="uk-label vk-label-<?= $c['priority'] ?>"><?= htmlspecialchars($this->priorityLabel($c['priority'])) ?></span>
+                    </div>
+                </article>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="uk-card-body vk-dashboard-empty">
+                <i class="fa fa-check-circle-o"></i>
+                <span><?= __('No tasks to collaborate on') ?></span>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="uk-card uk-card-default vk-card-stack vk-dashboard-card">
+            <div class="uk-card-header vk-card-header-row">
+                <h3 class="vk-card-title"><?= __('My Reviews') ?></h3>
+                <a href="<?= $url ?>?view=tasks&status=review&reviewer_id=<?= (int)$uid ?>" class="vk-card-action"><?= __('All mine') ?> <i class="fa fa-arrow-right"></i></a>
+            </div>
+            <?php if (!empty($myReviews)): ?>
+            <div class="vk-mini-list">
+                <?php foreach ($myReviews as $r): ?>
+                <article class="vk-mini-row">
+                    <div class="vk-mini-main">
+                        <a href="<?= $url ?>?view=task-edit&id=<?= (int)$r['id'] ?>&return_url=<?= $dashboardReturnParam ?>" class="vk-mini-title"><?= htmlspecialchars($r['title']) ?></a>
+                        <div class="vk-mini-meta">
+                            <span><?= __('TASK') ?>-<?= (int)$r['id'] ?></span>
+                            <?php if ($r['due_date']): ?><span class="<?= $r['due_date'] < $today ? 'is-overdue' : '' ?>"><?= htmlspecialchars($r['due_date']) ?></span><?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="vk-mini-side">
+                        <span class="uk-label vk-label-<?= $r['priority'] ?>"><?= htmlspecialchars($this->priorityLabel($r['priority'])) ?></span>
+                    </div>
+                </article>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="uk-card-body vk-dashboard-empty">
+                <i class="fa fa-check-circle-o"></i>
+                <span><?= __('Nothing to review') ?></span>
             </div>
             <?php endif; ?>
         </div>
