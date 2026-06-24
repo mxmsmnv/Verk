@@ -10,16 +10,17 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 133
+ * @version 134
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
     private VerkExportService $export;
+    public VerkFiles $files;
 
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 133,
+            'version'  => 134,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -89,7 +90,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public function ___uninstall(): void {
         parent::___uninstall();
         require_once __DIR__ . '/VerkDB.php';
-        VerkDB::uninstall($this->wire('database'));
+        VerkDB::uninstall($this->wire('database'), $this->wire('config')->paths->assets . 'Verk/');
     }
 
     public function ___upgrade($fromVersion, $toVersion): void {
@@ -113,6 +114,8 @@ class Verk extends Process implements Module, ConfigurableModule {
 
     public function init(): void {
         $this->export = new VerkExportService($this);
+        require_once __DIR__ . '/VerkFiles.php';
+        $this->files = new VerkFiles($this);
         // Inject task widget into page editor
         $this->addHookAfter('ProcessPageEdit::buildForm', $this, 'hookPageEditWidget');
     }
@@ -267,6 +270,9 @@ class Verk extends Process implements Module, ConfigurableModule {
         $input = $this->wire('input');
 
         if ($input->requestMethod('POST')) {
+            $postView = $input->get('view', 'string');
+            if ($postView === 'file-upload') return $this->viewFileUpload();
+            if ($postView === 'file-delete') return $this->viewFileDelete();
             $action = $input->post('action', 'string');
             return match($action) {
                 'save_task'      => $this->actionSaveTask(),
@@ -290,7 +296,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         }
 
         $view = $input->get('view', 'string') ?: 'dashboard';
-        if (!in_array($view, ['ajax-search', 'ajax-sprint-tasks', 'export-docx'], true)) {
+        if (!in_array($view, ['ajax-search', 'ajax-sprint-tasks', 'export-docx', 'file-upload', 'file', 'file-delete'], true)) {
             $this->setAdminChrome($view);
         }
         return match($view) {
@@ -307,6 +313,9 @@ class Verk extends Process implements Module, ConfigurableModule {
             'ajax-sprint-tasks' => $this->viewAjaxSprintTasks(),
             'bulk-audit'   => $this->viewBulkAuditForm(),
             'export-docx'  => $this->viewExportDocx(),
+            'file-upload'  => $this->viewFileUpload(),
+            'file'         => $this->viewFile(),
+            'file-delete'  => $this->viewFileDelete(),
             default        => $this->viewDashboard(),
         };
     }
@@ -919,6 +928,9 @@ class Verk extends Process implements Module, ConfigurableModule {
         $db->prepare("DELETE FROM vk_time_logs WHERE task_id=:id")->execute([':id'=>$id]);
         $db->prepare("DELETE FROM vk_comments WHERE task_id=:id")->execute([':id'=>$id]);
         $db->prepare("DELETE FROM vk_tasks WHERE id=:id")->execute([':id'=>$id]);
+        $this->files->deleteForEntity('task', $id);
+        // Comment attachments (Phase 3) are keyed by comment id, not task id;
+        // their cleanup will be handled when comment attachments are added.
         $this->message($this->_('Task deleted.'));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('tasks');
@@ -972,6 +984,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         if (!$id) { $this->redirect('kb'); }
         $this->requireOwner('vk_notes', $id);
         $this->wire('database')->prepare("DELETE FROM vk_notes WHERE id=:id")->execute([':id'=>$id]);
+        $this->files->deleteForEntity('note', $id);
         $this->message($this->_('Note deleted.'));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('kb');
@@ -2278,6 +2291,78 @@ class Verk extends Process implements Module, ConfigurableModule {
 
     // Page search (AJAX for task page picker)
     // -------------------------------------------------------------------------
+
+    protected function viewFileUpload(): string {
+        $this->requireAjaxCSRF();
+        $input = $this->wire('input');
+        $type  = (string) $input->post('entity_type');
+        $id    = (int) $input->post('entity_id');
+        $emb   = (int) (bool) $input->post('embedded');
+        if (!$this->files->isValidEntity($type) || $id < 1) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Invalid target.')], 400);
+        }
+        $table = ['task' => 'vk_tasks', 'note' => 'vk_notes', 'comment' => 'vk_comments'][$type];
+        $stmt = $this->wire('database')->prepare("SELECT id FROM `$table` WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        if (!$stmt->fetchColumn()) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Target not found.')], 404);
+        }
+        try {
+            $stored = $this->files->store($type, $id, (bool) $emb);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+        if (!$stored) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('No file was uploaded (check type and size).')], 422);
+        }
+        $files = array_map(fn($r) => [
+            'id' => (int) $r['id'], 'original_name' => $r['original_name'], 'url' => $r['url'],
+            'thumb' => $r['thumb'], 'mime' => $r['mime'], 'human_size' => $r['human_size'], 'is_image' => $r['is_image'],
+        ], $stored);
+        $this->jsonResponse(['ok' => true, 'files' => $files]);
+    }
+
+    protected function viewFile(): string {
+        $id  = (int) $this->wire('input')->get('id');
+        $row = $id ? $this->files->get($id) : null;
+        if (!$row) { http_response_code(404); exit; }
+
+        $wantThumb = $this->wire('input')->get('size') === 'thumb';
+        $path = $wantThumb ? ($this->files->thumbPathFor($row) ?: $this->files->streamPath($row))
+                           : $this->files->streamPath($row);
+        if (!is_file($path)) { http_response_code(404); exit; }
+
+        while (ob_get_level() > 0) ob_end_clean();
+
+        // SVG renders fine inside an <img> (script-inert there), but must never run
+        // as a document: force-download on direct navigation and strip all scripting
+        // via CSP/sandbox/nosniff. The grid + lightbox <img> tags still display it.
+        if (strtolower($row['ext']) === 'svg') {
+            header('Content-Type: image/svg+xml');
+            header('X-Content-Type-Options: nosniff');
+            header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox");
+            header('Content-Disposition: attachment; filename="' . addslashes($row['original_name']) . '"');
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        }
+
+        // Inline only true raster images; everything else downloads.
+        $this->wire('files')->send($path, [
+            'forceDownload' => !$this->files->isInlineImage($row),
+            'downloadFilename' => $row['original_name'],
+        ]);
+        exit;
+    }
+
+    protected function viewFileDelete(): string {
+        $this->requireAjaxCSRF();
+        $id  = (int) $this->wire('input')->post('id');
+        $row = $id ? $this->files->get($id) : null;
+        if (!$row) $this->jsonResponse(['ok' => false, 'message' => $this->_('File not found.')], 404);
+        $this->files->deleteFile($id);
+        $this->jsonResponse(['ok' => true]);
+    }
 
     protected function viewAjaxSearch(): string {
         while (ob_get_level() > 0) ob_end_clean();
