@@ -282,6 +282,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 'save_comment'   => $this->actionSaveComment(),
                 'delete_comment' => $this->actionDeleteComment(),
                 'review_decision' => $this->actionReviewDecision(),
+                'update_task_status' => $this->actionUpdateTaskStatus(),
                 'save_audit_rules' => $this->actionSaveAuditRules(),
                 'save_settings'    => $this->actionSaveSettings(),
                 'save_sprint'      => $this->actionSaveSprint(),
@@ -1146,6 +1147,44 @@ class Verk extends Process implements Module, ConfigurableModule {
         }
         $this->wire('session')->redirect($back);
         return '';
+    }
+
+    /** AJAX: inline status change from list views (e.g. dashboard "My Tasks"). */
+    protected function actionUpdateTaskStatus(): string {
+        $this->requireAjaxCSRF();
+        $input  = $this->wire('input');
+        $db     = $this->wire('database');
+        $user   = $this->wire('user');
+        $taskId = (int) $input->post('task_id');
+        $status = $this->sanEnum($input->post('status'), ['open','in_progress','review','done']);
+
+        if (!$taskId) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Task does not exist.')], 404);
+        }
+
+        $stmt = $db->prepare("SELECT created_by, assignee_id FROM vk_tasks WHERE id = :id");
+        $stmt->execute([':id' => $taskId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Task does not exist.')], 404);
+        }
+
+        // The assignee, the creator, or a superuser may change a task's status.
+        $canEdit = $user->isSuperuser()
+            || (int)$row['created_by'] === (int)$user->id
+            || (int)$row['assignee_id'] === (int)$user->id;
+        if (!$canEdit) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('You do not have permission to change this task.')], 403);
+        }
+
+        $db->prepare("UPDATE vk_tasks SET status = :s WHERE id = :id")
+           ->execute([':s' => $status, ':id' => $taskId]);
+
+        $this->jsonResponse([
+            'ok'           => true,
+            'status'       => $status,
+            'status_label' => $this->statusLabel($status),
+        ]);
     }
 
     protected function actionSaveSettings(): string {

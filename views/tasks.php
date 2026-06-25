@@ -452,7 +452,7 @@ ob_start();
         <span><?= __('Issue') ?></span>
         <span><?= __('State') ?></span>
     </div>
-    <div class="vk-issue-row-list">
+    <div class="vk-issue-row-list" data-status-list data-status-endpoint="<?= $url ?>" data-csrf-name="<?= htmlspecialchars($this->getCSRFName()) ?>" data-csrf-token="<?= htmlspecialchars($this->getCSRFToken()) ?>">
         <?php foreach ($tasks as $t): ?>
         <?php $taskDescription = trim(mb_strimwidth(strip_tags((string)($t['description'] ?? '')), 0, 150, '...')); ?>
         <article class="vk-issue-row">
@@ -475,7 +475,11 @@ ob_start();
             </div>
             <div class="vk-issue-row-side">
                 <span class="uk-label vk-label vk-label-<?= $t['priority'] ?>"><?= htmlspecialchars($this->priorityLabel($t['priority'])) ?></span>
-                <span class="uk-label vk-label vk-label-<?= $t['status'] ?>"><?= htmlspecialchars($this->statusLabel($t['status'])) ?></span>
+                <select class="vk-status-pill" data-task-status="<?= (int)$t['id'] ?>" data-current="<?= $t['status'] ?>" aria-label="<?= __('Status') ?>">
+                    <?php foreach (['open','in_progress','review','done'] as $sv): ?>
+                    <option value="<?= $sv ?>" class="vk-status-opt-<?= $sv ?>" <?= $t['status']===$sv?'selected':'' ?>><?= htmlspecialchars($this->statusLabel($sv)) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <?php if ($t['story_points']): ?><span class="vk-sprint-pill"><?= (int)$t['story_points'] ?> <?= __('SP') ?></span><?php endif; ?>
                 <?php $estD = $this->formatEstimate($t['estimate_h']); if($estD !== ''): ?><span class="vk-sprint-pill"><?= htmlspecialchars($estD) ?></span><?php endif; ?>
                 <?php if($t['actual_h'] !== null && $t['actual_h'] !== ''): ?><span class="vk-sprint-pill <?= ($t['estimate_h'] && $t['actual_h'] > $t['estimate_h']) ? 'is-over' : '' ?>"><?= number_format((float)$t['actual_h'],1) ?>h</span><?php endif; ?>

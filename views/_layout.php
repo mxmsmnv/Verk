@@ -1364,8 +1364,101 @@ body.dark-theme .vk-shell {
     justify-content: flex-end;
 }
 
+.vk-mini-foot {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 6px;
+}
+
+.vk-mini-side-stack {
+    align-items: flex-end;
+    align-self: stretch;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vk-status-pill {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: color-mix(in srgb, var(--vk-text) 13%, transparent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .45rem center;
+    background-size: 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--vk-text);
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 600;
+    height: auto;
+    line-height: 1.5;
+    padding: .18rem 1.35rem .18rem .6rem;
+    width: auto;
+}
+
+.vk-status-pill:hover {
+    filter: brightness(.96);
+}
+
+.vk-status-pill:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+/* Status colors mirror the .vk-label-* palette used elsewhere. */
+.vk-status-pill[data-current="open"] {
+    background-color: color-mix(in srgb, var(--vk-text) 13%, transparent);
+    color: var(--vk-text);
+}
+
+.vk-status-pill[data-current="in_progress"] {
+    background-color: var(--pw-alert-warning);
+    color: var(--pw-text-color);
+}
+
+.vk-status-pill[data-current="review"] {
+    background-color: color-mix(in srgb, var(--vk-accent) 16%, transparent);
+    color: var(--vk-accent);
+}
+
+.vk-status-pill[data-current="done"] {
+    background-color: var(--pw-alert-success);
+    color: var(--pw-text-color);
+}
+
+/* Color the open dropdown list. Support for styling <option> varies by
+   browser/OS (Chrome/Firefox honor it; macOS native menus may not). */
+.vk-status-opt-open {
+    background-color: color-mix(in srgb, var(--vk-text) 13%, var(--pw-blocks-background));
+    color: var(--vk-text);
+}
+
+.vk-status-opt-in_progress {
+    background-color: var(--pw-alert-warning);
+    color: var(--pw-text-color);
+}
+
+.vk-status-opt-review {
+    background-color: color-mix(in srgb, var(--vk-accent) 16%, var(--pw-blocks-background));
+    color: var(--vk-accent);
+}
+
+.vk-status-opt-done {
+    background-color: var(--pw-alert-success);
+    color: var(--pw-text-color);
+}
+
 .vk-mini-row .vk-chip {
     margin-top: 6px;
+}
+
+.vk-mini-foot .vk-chip {
+    margin-top: 0;
 }
 
 .vk-sprint-summary {
@@ -5820,3 +5913,66 @@ a.vk-sprint-summary-card.is-active {
 <?= $this->nav() ?>
 <div class="vk-content"><?= $content ?></div>
 </div>
+
+<script>
+/* Inline status change for any list with [data-status-list] (dashboard, tasks). */
+(function () {
+    if (window.__vkStatusPillInit) return;
+    window.__vkStatusPillInit = true;
+
+    document.addEventListener('change', function (e) {
+        var sel = e.target;
+        if (!sel || !sel.matches || !sel.matches('[data-task-status]')) return;
+        var list = sel.closest('[data-status-list]');
+        if (!list) return;
+
+        var endpoint   = list.getAttribute('data-status-endpoint');
+        var csrfName   = list.getAttribute('data-csrf-name');
+        var csrfToken  = list.getAttribute('data-csrf-token');
+        var removeDone = list.hasAttribute('data-remove-done');
+
+        var taskId = sel.getAttribute('data-task-status');
+        var prev   = sel.getAttribute('data-current') || '';
+        var value  = sel.value;
+        if (value === prev) return;
+
+        sel.disabled = true;
+
+        var body = new URLSearchParams();
+        body.set('action', 'update_task_status');
+        body.set('task_id', taskId);
+        body.set('status', value);
+        body.set(csrfName, csrfToken);
+
+        fetch(endpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+                return { ok: r.ok, data: d };
+            });
+        }).then(function (res) {
+            if (!res.ok || !res.data || !res.data.ok) {
+                throw new Error((res.data && res.data.message) || 'Could not update status.');
+            }
+            sel.setAttribute('data-current', value);
+            // Done tasks drop out of "My Tasks"; remove the row to match the list.
+            if (removeDone && value === 'done') {
+                var row = sel.closest('.vk-mini-row');
+                if (row) {
+                    row.style.transition = 'opacity .25s ease';
+                    row.style.opacity = '0';
+                    setTimeout(function () { row.remove(); }, 250);
+                }
+            }
+        }).catch(function (err) {
+            sel.value = prev;
+            alert(err.message || 'Could not update status.');
+        }).finally(function () {
+            sel.disabled = false;
+        });
+    });
+})();
+</script>

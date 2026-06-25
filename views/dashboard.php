@@ -139,7 +139,7 @@ ob_start();
                 <a href="<?= $url ?>?view=tasks&assignee_id=<?= (int)$uid ?>" class="vk-card-action"><?= __('All mine') ?> <i class="fa fa-arrow-right"></i></a>
             </div>
             <?php if ($myTasks): ?>
-            <div class="vk-mini-list">
+            <div class="vk-mini-list" data-status-list data-remove-done data-status-endpoint="<?= $url ?>" data-csrf-name="<?= htmlspecialchars($this->getCSRFName()) ?>" data-csrf-token="<?= htmlspecialchars($this->getCSRFToken()) ?>">
                 <?php foreach ($myTasks as $t): ?>
                 <article class="vk-mini-row">
                     <div class="vk-mini-main">
@@ -150,13 +150,20 @@ ob_start();
                             <?php if ($t['due_date']): ?><span class="vk-quarter-inline"><?= htmlspecialchars($this->quarterLabelForDate($t['due_date'])) ?></span><?php endif; ?>
                         </div>
                         <?php if (!empty($t['linked_page_title'])): ?>
-                        <a href="<?= $t['linked_page_edit'] ?>" class="vk-chip" target="_blank">
-                            <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars((string)$t['linked_page_title']) ?>
-                        </a>
+                        <div class="vk-mini-foot">
+                            <a href="<?= $t['linked_page_edit'] ?>" class="vk-chip" target="_blank">
+                                <i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars((string)$t['linked_page_title']) ?>
+                            </a>
+                        </div>
                         <?php endif; ?>
                     </div>
-                    <div class="vk-mini-side">
+                    <div class="vk-mini-side vk-mini-side-stack">
                         <span class="uk-label vk-label-<?= $t['priority'] ?>"><?= htmlspecialchars($this->priorityLabel($t['priority'])) ?></span>
+                        <select class="vk-status-pill" data-task-status="<?= (int)$t['id'] ?>" data-current="<?= $t['status'] ?>" aria-label="<?= __('Status') ?>">
+                            <?php foreach (['open','in_progress','review','done'] as $sv): ?>
+                            <option value="<?= $sv ?>" class="vk-status-opt-<?= $sv ?>" <?= $t['status']===$sv?'selected':'' ?>><?= htmlspecialchars($this->statusLabel($sv)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </article>
                 <?php endforeach; ?>
