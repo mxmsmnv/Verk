@@ -57,7 +57,7 @@ class VerkNotify {
             $mail->body($body); // plain text only — do not set bodyHTML
             $mail->send();
         } catch (\Throwable $e) {
-            $this->module->wire('log')->error('verk-notify: ' . $e->getMessage());
+            $this->module->wire('log')->save('verk-notify', 'sendPlain failed: ' . $e->getMessage());
         }
     }
 }
