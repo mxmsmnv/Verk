@@ -16,6 +16,7 @@ class Verk extends Process implements Module, ConfigurableModule {
 
     private VerkExportService $export;
     public VerkFiles $files;
+    public VerkNotify $notify;
 
     public static function getModuleInfo(): array {
         return [
@@ -120,6 +121,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $this->export = new VerkExportService($this);
         require_once __DIR__ . '/VerkFiles.php';
         $this->files = new VerkFiles($this);
+        require_once __DIR__ . '/VerkNotify.php';
+        $this->notify = new VerkNotify($this);
         // Inject task widget into page editor
         $this->addHookAfter('ProcessPageEdit::buildForm', $this, 'hookPageEditWidget');
     }
