@@ -2925,6 +2925,15 @@ body.dark-theme .vk-shell {
     white-space: nowrap;
 }
 
+/* The rule above is the single-line, ellipsised preview used in task-list rows.
+   In the task detail panel the same class wraps a full description, so let it
+   wrap there (scoped to .vk-issue-body, which only the detail view uses). */
+.vk-issue-body .vk-issue-description {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+}
+
 .vk-issue-row-meta,
 .vk-issue-row-links,
 .vk-issue-row-side {
