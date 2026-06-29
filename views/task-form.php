@@ -515,7 +515,17 @@ ob_start();
                             const div = document.createElement('div');
                             div.className = 'vk-picker-result';
                             const strong = document.createElement('strong');
-                            strong.textContent = p.title;
+                            const statusBits = [];
+                            if (p.trashed) {
+                                const icon = document.createElement('i');
+                                icon.className = 'fa fa-trash vk-status-icon';
+                                strong.appendChild(icon);
+                                statusBits.push('<?= __('Trashed') ?>');
+                            }
+                            strong.appendChild(document.createTextNode(p.title));
+                            if (p.hidden)      { strong.classList.add('vk-status-hidden');      statusBits.push('<?= __('Hidden') ?>'); }
+                            if (p.unpublished) { strong.classList.add('vk-status-unpublished'); statusBits.push('<?= __('Unpublished') ?>'); }
+                            if (statusBits.length) div.title = statusBits.join(', ');
                             const small = document.createElement('small');
                             small.textContent = ' ' + p.url + ' · ' + p.template;
                             div.appendChild(strong);
