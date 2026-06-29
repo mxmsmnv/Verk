@@ -1194,6 +1194,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                     'selector' => $parts[1],
                     'field'    => $parts[2],
                     'message'  => $parts[3] ?: $this->_('Field is empty'),
+                    'users'    => $parts[4] ?? '',
                 ]);
             } elseif (count($parts) >= 2) {
                 // Previous versions stored an empty-field selector in column two.
@@ -1425,11 +1426,21 @@ class Verk extends Process implements Module, ConfigurableModule {
             if ($field !== '') $selector = implode(', ', $scope);
         }
 
+        $rawUsers = $rule['users'] ?? [];
+        if (is_string($rawUsers)) $rawUsers = explode(',', $rawUsers);
+        $users = [];
+        foreach ((array)$rawUsers as $name) {
+            $name = strtolower(trim((string)$name));
+            $name = preg_replace('/[^a-z0-9\-_.]/', '', $name) ?? '';
+            if ($name !== '' && !in_array($name, $users, true)) $users[] = $name;
+        }
+
         return [
             'label'    => trim((string)($rule['label'] ?? $this->_('Audit rule'))),
             'selector' => $selector ?: 'template!=admin',
             'field'    => preg_replace('/[^A-Za-z0-9_.*]/', '', $field) ?? '',
             'message'  => trim((string)($rule['message'] ?? $this->_('Field is empty'))),
+            'users'    => $users,
         ];
     }
 
