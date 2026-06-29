@@ -839,8 +839,13 @@ body.dark-theme .vk-shell {
     color: var(--vk-muted);
 }
 
-.vk-status-unpublished {
-    text-decoration: line-through;
+/* Scoped under .vk-shell + !important, and covering :hover/:focus, to beat the
+   global `.vk-shell a(:hover,:focus) { text-decoration: none !important }`
+   link reset on title links in every state. */
+.vk-shell .vk-status-unpublished,
+.vk-shell .vk-status-unpublished:hover,
+.vk-shell .vk-status-unpublished:focus {
+    text-decoration: line-through !important;
 }
 
 .vk-status-icon {
