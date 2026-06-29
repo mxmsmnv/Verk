@@ -36,7 +36,7 @@ If this project helps your work, consider supporting future development: [GitHub
 - **Quarter planning** — fiscal quarter start month, sprint quarter filters, date planning helpers, and quarter labels on tasks
 - **Rich text** — task descriptions, comments, note content, and sprint goals use TinyMCE when `InputfieldTinyMCE` is installed
 - **DOCX exports** — task lists, notes, sprints, and knowledge base exports
-- **Audit rules** — plain text config: `Label | Scope selector | Field path | Message`, with dot-notation subfields
+- **Audit rules** — plain text config: `Label | Scope selector | Field path | Message | Users`, with dot-notation subfields; the optional `Users` column (comma-separated usernames) limits a rule to those users on the dashboard's "My Content Audit" card
 - **Return-aware forms** — create/edit flows can preserve filtered list URLs and return users to the exact context they came from
 
 ## Requirements

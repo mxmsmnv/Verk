@@ -301,7 +301,7 @@ ob_start();
     <div class="uk-card-body">
         <div class="vk-audit-rule-format">
             <span><?= __('One rule per line') ?></span>
-            <code><?= __('Label | Scope selector | Field path | Message') ?></code>
+            <code><?= __('Label | Scope selector | Field path | Message | Users') ?></code>
         </div>
         <form method="post" action="<?= $url ?>">
             <input type="hidden" name="<?= $csrfN ?>" value="<?= $csrf ?>">
@@ -309,7 +309,8 @@ ob_start();
             <div class="vk-field">
                 <textarea name="audit_rules" class="uk-textarea vk-audit-rules"><?php
 foreach ($rules as $r) {
-    echo htmlspecialchars($r['label'] . ' | ' . $r['selector'] . ' | ' . ($r['field'] ?? '') . ' | ' . ($r['message'] ?? '')) . "\n";
+    $users = implode(',', $r['users'] ?? []);
+    echo htmlspecialchars($r['label'] . ' | ' . $r['selector'] . ' | ' . ($r['field'] ?? '') . ' | ' . ($r['message'] ?? '') . ' | ' . $users) . "\n";
 }
 ?></textarea>
             </div>
