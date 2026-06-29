@@ -1186,7 +1186,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         foreach (explode("\n", $raw) as $line) {
             $line = trim($line);
             if (!$line || str_starts_with($line, '#')) continue;
-            // format: Label | scope selector | field.path | message
+            // format: Label | scope selector | field.path | message | users
             $parts = array_map('trim', explode('|', $line));
             if (count($parts) >= 4) {
                 $rules[] = $this->normalizeAuditRule([

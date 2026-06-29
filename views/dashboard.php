@@ -247,7 +247,7 @@ ob_start();
             </div>
             <div class="uk-card-body vk-card-body-flush">
                 <?php foreach ($auditSummary as $a): ?>
-                <a href="<?= $url ?>?view=audit&rule=<?= $a['index'] ?>" class="vk-audit-item">
+                <a href="<?= $url ?>?view=audit&rule=<?= (int)$a['index'] ?>" class="vk-audit-item">
                     <span class="vk-audit-item-label"><?= htmlspecialchars($a['label']) ?></span>
                     <span class="vk-audit-count <?= $a['count'] > 0 ? 'is-warning' : 'is-success' ?>">
                         <?= sprintf(__('%d pages'), $a['count']) ?>
