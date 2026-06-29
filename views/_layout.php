@@ -835,6 +835,19 @@ body.dark-theme .vk-shell {
     margin-right: 7px;
 }
 
+.vk-status-hidden {
+    color: var(--vk-muted);
+}
+
+.vk-status-unpublished {
+    text-decoration: line-through;
+}
+
+.vk-status-icon {
+    color: var(--vk-muted);
+    margin-right: 5px;
+}
+
 .vk-audit-page-actions {
     align-items: center;
     display: flex;

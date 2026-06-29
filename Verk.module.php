@@ -1298,6 +1298,36 @@ class Verk extends Process implements Module, ConfigurableModule {
         return $title !== '' ? $title : ('#' . (int)$page->id . ' ' . $page->name);
     }
 
+    /** Publication-status flags for a page. */
+    protected function pageStatusFlags(Page $page): array {
+        return [
+            'hidden'      => $page->isHidden(),
+            'unpublished' => $page->isUnpublished(),
+            'trashed'     => $page->isTrash(),
+        ];
+    }
+
+    /**
+     * Presentation pieces derived from status flags, for consistent rendering
+     * across views: 'class' (space-joined modifier classes, '' if none),
+     * 'label' (human status, e.g. "Hidden, Unpublished", '' if none), and
+     * 'icon' (trash-icon HTML, '' unless trashed; safe/pre-escaped).
+     */
+    protected function pageStatusDisplay(array $flags): array {
+        $classes = [];
+        $label   = [];
+        if (!empty($flags['hidden']))      { $classes[] = 'vk-status-hidden';      $label[] = $this->_('Hidden'); }
+        if (!empty($flags['unpublished'])) { $classes[] = 'vk-status-unpublished'; $label[] = $this->_('Unpublished'); }
+        if (!empty($flags['trashed']))     { $classes[] = 'vk-status-trashed';     $label[] = $this->_('Trashed'); }
+        return [
+            'class' => implode(' ', $classes),
+            'label' => implode(', ', $label),
+            'icon'  => !empty($flags['trashed'])
+                ? '<i class="fa fa-trash vk-status-icon" aria-hidden="true"></i>'
+                : '',
+        ];
+    }
+
     protected function getUpcomingPublications(int $days = 14): array {
         $cfg = $this->getConfig();
         if (!$cfg['calendar_template'] || !$cfg['calendar_date_field']) return [];
@@ -1462,15 +1492,12 @@ class Verk extends Process implements Module, ConfigurableModule {
                 if (!$this->auditValueIsEmpty($this->auditDotValue($p, $field))) continue;
             }
             $out[] = [
-                'id'          => $p->id,
-                'title'       => $this->pageTitleForDisplay($p),
-                'template'    => (string)$p->template,
-                'edit'        => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
-                'url'         => $p->url,
-                'hidden'      => $p->isHidden(),
-                'unpublished' => $p->isUnpublished(),
-                'trashed'     => $p->isTrash(),
-            ];
+                'id'       => $p->id,
+                'title'    => $this->pageTitleForDisplay($p),
+                'template' => (string)$p->template,
+                'edit'     => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
+                'url'      => $p->url,
+            ] + $this->pageStatusFlags($p);
         }
         return ['pages' => $out, 'total' => count($out)];
     }
