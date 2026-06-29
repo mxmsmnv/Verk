@@ -425,7 +425,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $unassignedTaskCount = (int)$stmt->fetchColumn();
 
         // Audit quick summary
-        $auditSummary = $this->getAuditSummary();
+        $auditSummary = $this->getAuditSummary(true);
 
         // Selected quarter sprint plan
         $stmt = $db->prepare(
@@ -1618,10 +1618,23 @@ class Verk extends Process implements Module, ConfigurableModule {
         return false;
     }
 
-    protected function getAuditSummary(): array {
-        $rules  = $this->getAuditRules();
-        $summary = [];
+    /**
+     * A rule with no users listed is global (visible to everyone). Otherwise it
+     * is visible only to the named users. No superuser override — the dashboard
+     * "My Content Audit" card stays personal, consistent with "My Tasks".
+     */
+    protected function auditRuleVisibleToUser(array $rule, string $userName): bool {
+        $users = $rule['users'] ?? [];
+        if (empty($users)) return true;
+        return in_array(strtolower(trim($userName)), $users, true);
+    }
+
+    protected function getAuditSummary(bool $onlyMine = false): array {
+        $rules    = $this->getAuditRules();
+        $userName = $onlyMine ? (string)$this->wire('user')->name : '';
+        $summary  = [];
         foreach ($rules as $i => $rule) {
+            if ($onlyMine && !$this->auditRuleVisibleToUser($rule, $userName)) continue;
             $result = $this->runAuditRule($rule);
             $count = (int)($result['total'] ?? 0);
             $summary[] = ['label' => $rule['label'], 'count' => $count, 'index' => $i];
