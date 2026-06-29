@@ -324,6 +324,7 @@ foreach ($rules as $r) {
             <code>Empty city | template=location | address.city | City is missing</code>
             <code>Missing hero title | template=page | blocks.hero.title | Hero title is empty</code>
             <code>Missing table amount | template=product | prices.*.amount | Price amount is empty</code>
+            <code>Needs clinical review | template=message | | Needs clinical review | john-smith,jane-brown</code>
         </div>
     </div>
 </div>
