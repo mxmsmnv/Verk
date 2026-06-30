@@ -452,7 +452,7 @@ ob_start();
         <span><?= __('Issue') ?></span>
         <span><?= __('State') ?></span>
     </div>
-    <div class="vk-issue-row-list">
+    <div class="vk-issue-row-list" data-status-list data-status-endpoint="<?= $url ?>" data-csrf-name="<?= htmlspecialchars($this->getCSRFName()) ?>" data-csrf-token="<?= htmlspecialchars($this->getCSRFToken()) ?>">
         <?php foreach ($tasks as $t): ?>
         <?php $taskDescription = trim(mb_strimwidth(strip_tags((string)($t['description'] ?? '')), 0, 150, '...')); ?>
         <article class="vk-issue-row">
@@ -468,14 +468,18 @@ ob_start();
                     <?php if ($t['section']): ?><span><?= htmlspecialchars($t['section']) ?></span><?php endif; ?>
                     <span class="<?= $t['assignee_name'] ? '' : 'is-muted' ?>"><i class="fa fa-user-o"></i> <?= $t['assignee_name'] ? htmlspecialchars($t['assignee_name']) : __('Unassigned') ?></span>
                     <?php if ($t['sprint_name']): ?><span><i class="fa fa-bolt"></i> <?= htmlspecialchars($t['sprint_name']) ?></span><?php endif; ?>
-                    <?php if (!empty($t['linked_page_title'])): ?><span><a href="<?= $t['linked_page_edit'] ?>" class="vk-inline-page-link" target="_blank"><i class="fa fa-pencil-square-o"></i> <?= htmlspecialchars(mb_strimwidth((string)$t['linked_page_title'], 0, 34, '...')) ?></a></span><?php endif; ?>
+                    <?php if (!empty($t['linked_page_title'])): $dlp = $this->pageStatusDisplay($t['linked_page_status'] ?? []); ?><span><a href="<?= $t['linked_page_edit'] ?>" class="vk-inline-page-link <?= $dlp['class'] ?>" target="_blank"<?= $dlp['label'] !== '' ? ' title="' . htmlspecialchars($dlp['label']) . '"' : '' ?>><i class="fa fa-pencil-square-o"></i> <?= $dlp['icon'] ?><?= htmlspecialchars(mb_strimwidth((string)$t['linked_page_title'], 0, 34, '...')) ?></a></span><?php endif; ?>
                     <span class="<?= ($t['due_date'] && $t['due_date'] < $today && $t['status'] !== 'done') ? 'is-overdue' : (!$t['due_date'] ? 'is-muted' : '') ?>"><i class="fa fa-calendar-o"></i> <?= $t['due_date'] ? htmlspecialchars($t['due_date']) : __('No due date') ?></span>
                     <?php if ($t['due_date']): ?><span class="vk-quarter-inline"><?= htmlspecialchars($this->quarterLabelForDate($t['due_date'])) ?></span><?php endif; ?>
                 </div>
             </div>
             <div class="vk-issue-row-side">
                 <span class="uk-label vk-label vk-label-<?= $t['priority'] ?>"><?= htmlspecialchars($this->priorityLabel($t['priority'])) ?></span>
-                <span class="uk-label vk-label vk-label-<?= $t['status'] ?>"><?= htmlspecialchars($this->statusLabel($t['status'])) ?></span>
+                <select class="vk-status-pill" data-task-status="<?= (int)$t['id'] ?>" data-current="<?= $t['status'] ?>" aria-label="<?= __('Status') ?>">
+                    <?php foreach (['open','in_progress','review','done'] as $sv): ?>
+                    <option value="<?= $sv ?>" class="vk-status-opt-<?= $sv ?>" <?= $t['status']===$sv?'selected':'' ?>><?= htmlspecialchars($this->statusLabel($sv)) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <?php if ($t['story_points']): ?><span class="vk-sprint-pill"><?= (int)$t['story_points'] ?> <?= __('SP') ?></span><?php endif; ?>
                 <?php $estD = $this->formatEstimate($t['estimate_h']); if($estD !== ''): ?><span class="vk-sprint-pill"><?= htmlspecialchars($estD) ?></span><?php endif; ?>
                 <?php if($t['actual_h'] !== null && $t['actual_h'] !== ''): ?><span class="vk-sprint-pill <?= ($t['estimate_h'] && $t['actual_h'] > $t['estimate_h']) ? 'is-over' : '' ?>"><?= number_format((float)$t['actual_h'],1) ?>h</span><?php endif; ?>

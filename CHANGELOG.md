@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0] - 2026-06-30
+
+### Added
+- Inline task status dropdowns on the Dashboard and Tasks list, with AJAX updates and permission checks.
+- Email notifications for users newly added to tasks as assignee, collaborator, or reviewer, plus a bulk-create digest for assignees.
+- Page status indicators for hidden, unpublished, and trashed ProcessWire pages wherever linked page titles are shown.
+
+### Changed
+- Dashboard Recent Open Tasks now shows 8 tasks per page.
+- Tasks and Calendar layouts now use the available content width more consistently, with improved filter, pagination, and assignee-selector spacing.
+- Discussion comment editor now opens taller, and task detail descriptions wrap instead of inheriting the list-preview ellipsis.
+- Module version bumped to `140` so ProcessWire detects the `1.4.0` minor upgrade.
+
 ## [1.3.6] - 2026-06-30
 
 ### Added

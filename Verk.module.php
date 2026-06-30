@@ -10,17 +10,18 @@ require_once __DIR__ . '/VerkExportService.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 136
+ * @version 140
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
     private VerkExportService $export;
     public VerkFiles $files;
+    public VerkNotify $notify;
 
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 136,
+            'version'  => 140,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -62,6 +63,10 @@ class Verk extends Process implements Module, ConfigurableModule {
             'page_widget_show_quarter' => 1,
             'page_widget_show_assignee' => 1,
             'assignee_roles' => '',
+            'notify_enabled' => 1,
+            'notify_assignee' => 1,
+            'notify_collaborator' => 1,
+            'notify_reviewer' => 1,
         ];
     }
 
@@ -116,6 +121,8 @@ class Verk extends Process implements Module, ConfigurableModule {
         $this->export = new VerkExportService($this);
         require_once __DIR__ . '/VerkFiles.php';
         $this->files = new VerkFiles($this);
+        require_once __DIR__ . '/VerkNotify.php';
+        $this->notify = new VerkNotify($this);
         // Inject task widget into page editor
         $this->addHookAfter('ProcessPageEdit::buildForm', $this, 'hookPageEditWidget');
     }
@@ -282,6 +289,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 'save_comment'   => $this->actionSaveComment(),
                 'delete_comment' => $this->actionDeleteComment(),
                 'review_decision' => $this->actionReviewDecision(),
+                'update_task_status' => $this->actionUpdateTaskStatus(),
                 'save_audit_rules' => $this->actionSaveAuditRules(),
                 'save_settings'    => $this->actionSaveSettings(),
                 'save_sprint'      => $this->actionSaveSprint(),
@@ -378,7 +386,7 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         // Recent tasks (all) — paginated
         $recentPage    = max(1, (int)$input->get('recent_page', 'int') ?: 1);
-        $recentLimit   = 4;
+        $recentLimit   = 8;
         $recentOffset  = ($recentPage - 1) * $recentLimit;
 
         $stmt = $db->query("SELECT COUNT(*) FROM vk_tasks WHERE status != 'done'");
@@ -901,6 +909,20 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($returnUrl) $editUrl .= '&return_url=' . rawurlencode($returnUrl);
         $this->requireOwnerForExisting('vk_tasks', $id);
 
+        // Snapshot current membership before writes, to detect newly-added users.
+        $notifyBefore = ['assignee' => 0, 'reviewer' => [], 'collaborator' => []];
+        if ($id) {
+            $bStmt = $db->prepare("SELECT assignee_id FROM vk_tasks WHERE id = :id");
+            $bStmt->execute([':id' => $id]);
+            $notifyBefore['assignee'] = (int) $bStmt->fetchColumn();
+            $rPrev = $db->prepare("SELECT user_id FROM vk_task_reviewers WHERE task_id = :tid");
+            $rPrev->execute([':tid' => $id]);
+            $notifyBefore['reviewer'] = array_map('intval', $rPrev->fetchAll(\PDO::FETCH_COLUMN));
+            $cPrev = $db->prepare("SELECT user_id FROM vk_task_collaborators WHERE task_id = :tid");
+            $cPrev->execute([':tid' => $id]);
+            $notifyBefore['collaborator'] = array_map('intval', $cPrev->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
         $title = substr($this->san($input->post('title')), 0, 255);
         if (!$title) {
             $this->error($this->_('Title is required.'));
@@ -998,6 +1020,14 @@ class Verk extends Process implements Module, ConfigurableModule {
             $insC = $db->prepare("INSERT INTO vk_task_collaborators (task_id, user_id) VALUES (:tid, :uid)");
             foreach ($collaboratorIds as $cid) $insC->execute([':tid' => $id, ':uid' => $cid]);
         }
+
+        // Notify users newly added to a role on this task.
+        $notifyAfter = [
+            'assignee'     => (int) ($assigneeId ?? 0),
+            'reviewer'     => array_values($reviewerIds),
+            'collaborator' => array_values($collaboratorIds),
+        ];
+        $this->notify->membershipChanged($id, $title, $notifyBefore, $notifyAfter, (int) $user->id);
 
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('task-edit', $id);
@@ -1148,6 +1178,44 @@ class Verk extends Process implements Module, ConfigurableModule {
         return '';
     }
 
+    /** AJAX: inline status change from list views (e.g. dashboard "My Tasks"). */
+    protected function actionUpdateTaskStatus(): string {
+        $this->requireAjaxCSRF();
+        $input  = $this->wire('input');
+        $db     = $this->wire('database');
+        $user   = $this->wire('user');
+        $taskId = (int) $input->post('task_id');
+        $status = $this->sanEnum($input->post('status'), ['open','in_progress','review','done']);
+
+        if (!$taskId) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Task does not exist.')], 404);
+        }
+
+        $stmt = $db->prepare("SELECT created_by, assignee_id FROM vk_tasks WHERE id = :id");
+        $stmt->execute([':id' => $taskId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('Task does not exist.')], 404);
+        }
+
+        // The assignee, the creator, or a superuser may change a task's status.
+        $canEdit = $user->isSuperuser()
+            || (int)$row['created_by'] === (int)$user->id
+            || (int)$row['assignee_id'] === (int)$user->id;
+        if (!$canEdit) {
+            $this->jsonResponse(['ok' => false, 'message' => $this->_('You do not have permission to change this task.')], 403);
+        }
+
+        $db->prepare("UPDATE vk_tasks SET status = :s WHERE id = :id")
+           ->execute([':s' => $status, ':id' => $taskId]);
+
+        $this->jsonResponse([
+            'ok'           => true,
+            'status'       => $status,
+            'status_label' => $this->statusLabel($status),
+        ]);
+    }
+
     protected function actionSaveSettings(): string {
         $this->requireCSRF();
         $input = $this->wire('input');
@@ -1171,6 +1239,10 @@ class Verk extends Process implements Module, ConfigurableModule {
             'page_widget_show_quarter' => $has('page_widget_show_quarter') ? (int)(bool)$input->post('page_widget_show_quarter') : (int)$current['page_widget_show_quarter'],
             'page_widget_show_assignee' => $has('page_widget_show_assignee') ? (int)(bool)$input->post('page_widget_show_assignee') : (int)$current['page_widget_show_assignee'],
             'assignee_roles' => $has('assignee_roles') ? $this->sanRoleList((string)$input->post('assignee_roles')) : (string)($current['assignee_roles'] ?? ''),
+            'notify_enabled' => $has('notify_enabled') ? (int)(bool)$input->post('notify_enabled') : (int)$current['notify_enabled'],
+            'notify_assignee' => $has('notify_assignee') ? (int)(bool)$input->post('notify_assignee') : (int)$current['notify_assignee'],
+            'notify_collaborator' => $has('notify_collaborator') ? (int)(bool)$input->post('notify_collaborator') : (int)$current['notify_collaborator'],
+            'notify_reviewer' => $has('notify_reviewer') ? (int)(bool)$input->post('notify_reviewer') : (int)$current['notify_reviewer'],
             // saveConfig() with an array replaces the whole config blob, so carry
             // over keys this form doesn't manage (otherwise they're wiped).
             'audit_rules' => (string)($current['audit_rules'] ?? ''),
@@ -1238,6 +1310,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $task['linked_page_url']  = '';
         $task['linked_page_title'] = '';
         $task['linked_page_viewable'] = false;
+        $task['linked_page_status'] = [];
         if (!empty($task['page_id'])) {
             $p = $this->wire('pages')->get((int)$task['page_id']);
             if ($p->id) {
@@ -1246,6 +1319,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 $task['linked_page_viewable'] = $p->viewable();
                 $task['linked_page_url']  = $task['linked_page_viewable'] ? $p->httpUrl() : '';
                 $task['linked_page_title'] = $this->pageTitleForDisplay($p);
+                $task['linked_page_status'] = $this->pageStatusFlags($p);
             }
         }
         return $task;
@@ -1270,6 +1344,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 $t['linked_page_viewable'] = $p->viewable();
                 $t['linked_page_url']  = $t['linked_page_viewable'] ? $p->httpUrl() : '';
                 $t['linked_page_title'] = $this->pageTitleForDisplay($p);
+                $t['linked_page_status'] = $this->pageStatusFlags($p);
             }
         }
         return $tasks;
@@ -1291,12 +1366,43 @@ class Verk extends Process implements Module, ConfigurableModule {
         $task['linked_page_url'] = '';
         $task['linked_page_title'] = '';
         $task['linked_page_viewable'] = false;
+        $task['linked_page_status'] = [];
         return $task;
     }
 
     protected function pageTitleForDisplay(Page $page): string {
         $title = trim((string)$page->title);
         return $title !== '' ? $title : ('#' . (int)$page->id . ' ' . $page->name);
+    }
+
+    /** Publication-status flags for a page. */
+    protected function pageStatusFlags(Page $page): array {
+        return [
+            'hidden'      => $page->isHidden(),
+            'unpublished' => $page->isUnpublished(),
+            'trashed'     => $page->isTrash(),
+        ];
+    }
+
+    /**
+     * Presentation pieces derived from status flags, for consistent rendering
+     * across views: 'class' (space-joined modifier classes, '' if none),
+     * 'label' (human status, e.g. "Hidden, Unpublished", '' if none), and
+     * 'icon' (trash-icon HTML, '' unless trashed; safe/pre-escaped).
+     */
+    protected function pageStatusDisplay(array $flags): array {
+        $classes = [];
+        $label   = [];
+        if (!empty($flags['hidden']))      { $classes[] = 'vk-status-hidden';      $label[] = $this->_('Hidden'); }
+        if (!empty($flags['unpublished'])) { $classes[] = 'vk-status-unpublished'; $label[] = $this->_('Unpublished'); }
+        if (!empty($flags['trashed']))     { $classes[] = 'vk-status-trashed';     $label[] = $this->_('Trashed'); }
+        return [
+            'class' => implode(' ', $classes),
+            'label' => implode(', ', $label),
+            'icon'  => !empty($flags['trashed'])
+                ? '<i class="fa fa-trash vk-status-icon" aria-hidden="true"></i>'
+                : '',
+        ];
     }
 
     protected function getUpcomingPublications(int $days = 14): array {
@@ -1321,11 +1427,12 @@ class Verk extends Process implements Module, ConfigurableModule {
         $out = [];
         foreach ($pages as $p) {
             $out[] = [
-                'id'    => $p->id,
-                'title' => $p->title,
-                'date'  => (string)$p->get($cfg['calendar_date_field']),
-                'url'   => $p->httpUrl(),
-                'edit'  => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
+                'id'     => $p->id,
+                'title'  => $p->title,
+                'date'   => (string)$p->get($cfg['calendar_date_field']),
+                'url'    => $p->httpUrl(),
+                'edit'   => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
+                'status' => $this->pageStatusFlags($p),
             ];
         }
         return $out;
@@ -1354,11 +1461,12 @@ class Verk extends Process implements Module, ConfigurableModule {
             $d = (string)$p->get($cfg['calendar_date_field']);
             $dateKey = substr($d, 0, 10);
             $byDay[$dateKey][] = [
-                'id'    => $p->id,
-                'title' => $p->title,
-                'date'  => $d,
-                'edit'  => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
-                'url'   => $p->httpUrl(),
+                'id'     => $p->id,
+                'title'  => $p->title,
+                'date'   => $d,
+                'edit'   => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
+                'url'    => $p->httpUrl(),
+                'status' => $this->pageStatusFlags($p),
             ];
         }
         return $byDay;
@@ -1478,7 +1586,7 @@ class Verk extends Process implements Module, ConfigurableModule {
                 'template' => (string)$p->template,
                 'edit'     => $this->wire('config')->urls->admin . 'page/edit/?id=' . $p->id,
                 'url'      => $p->url,
-            ];
+            ] + $this->pageStatusFlags($p);
         }
         return ['pages' => $out, 'total' => count($out)];
     }
@@ -1701,7 +1809,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         return ['assignees' => $out, 'missingEstimates' => $missingEstimates];
     }
 
-    protected function getConfig(): array {
+    public function getConfig(): array {
         $saved = $this->wire('modules')->getConfig($this);
         return array_merge(self::getDefaultConfig(), is_array($saved) ? $saved : []);
     }
@@ -1891,7 +1999,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $pages = [];
         foreach ($pageIds as $pid) {
             $p = $this->wire('pages')->get($pid);
-            if ($p->id) $pages[] = ['id'=>$p->id, 'title'=>$p->title, 'url'=>$p->url];
+            if ($p->id) $pages[] = ['id'=>$p->id, 'title'=>$p->title, 'url'=>$p->url, 'status'=>$this->pageStatusFlags($p)];
         }
 
         if (!$pages) {
@@ -2511,6 +2619,11 @@ class Verk extends Process implements Module, ConfigurableModule {
             $created++;
         }
 
+        // One digest email to the bulk assignee (skips actor, gated by config).
+        if ($assigneeId) {
+            $this->notify->bulkAssigned((int) $assigneeId, $created, (int) $user->id);
+        }
+
         $this->message(sprintf($this->_n('%d task created.', '%d tasks created.', $created), $created));
         if ($returnUrl) $this->wire('session')->redirect($returnUrl);
         $this->redirect('tasks');
@@ -2604,7 +2717,7 @@ class Verk extends Process implements Module, ConfigurableModule {
         $pages = $this->wire('pages')->find($selector);
         $out   = [];
         foreach ($pages as $p) {
-            $out[] = ['id' => $p->id, 'title' => $p->title, 'url' => $p->url, 'template' => (string)$p->template];
+            $out[] = ['id' => $p->id, 'title' => $p->title, 'url' => $p->url, 'template' => (string)$p->template] + $this->pageStatusFlags($p);
         }
         echo json_encode($out);
         exit;
