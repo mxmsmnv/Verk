@@ -2732,7 +2732,7 @@ body.dark-theme .vk-shell {
 }
 
 .vk-task-list-card {
-    max-width: 1180px;
+    max-width: none;
 }
 
 .vk-task-status-strip {
@@ -3924,7 +3924,6 @@ body.dark-theme .vk-shell {
     gap: 10px;
     grid-template-columns: minmax(280px, 1.2fr) minmax(240px, 1fr) minmax(240px, 1fr);
     margin: 0 0 14px;
-    max-width: 1180px;
     padding: 10px;
 }
 
