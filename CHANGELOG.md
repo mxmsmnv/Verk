@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.6] - 2026-06-30
+
+### Added
+- Content Audit rules now support an optional fifth `Users` column with comma-separated ProcessWire usernames for dashboard-only "My Content Audit" visibility.
+
+### Changed
+- Dashboard audit summaries now preserve original rule indexes while filtering user-scoped rules to the current user.
+- Module version bumped to `136` so ProcessWire detects the `1.3.6` patch upgrade.
+
 ## [1.3.3] - 2026-06-18
 
 ### Fixed
