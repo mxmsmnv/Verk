@@ -1,59 +1,36 @@
 # Changelog
 
-## [1.4.0] - 2026-06-30
+## [1.5.0] - 2026-06-30
 
 ### Added
+- Content Audit rules now support an optional fifth `Users` column with comma-separated ProcessWire usernames for dashboard-only "My Content Audit" visibility.
 - Inline task status dropdowns on the Dashboard and Tasks list, with AJAX updates and permission checks.
 - Email notifications for users newly added to tasks as assignee, collaborator, or reviewer, plus a bulk-create digest for assignees.
 - Page status indicators for hidden, unpublished, and trashed ProcessWire pages wherever linked page titles are shown.
 
 ### Changed
+- Dashboard audit summaries now preserve original rule indexes while filtering user-scoped rules to the current user.
 - Dashboard Recent Open Tasks now shows 8 tasks per page.
 - Tasks and Calendar layouts now use the available content width more consistently, with improved filter, pagination, and assignee-selector spacing.
 - Discussion comment editor now opens taller, and task detail descriptions wrap instead of inheriting the list-preview ellipsis.
-- Module version bumped to `140` so ProcessWire detects the `1.4.0` minor upgrade.
-
-## [1.3.6] - 2026-06-30
-
-### Added
-- Content Audit rules now support an optional fifth `Users` column with comma-separated ProcessWire usernames for dashboard-only "My Content Audit" visibility.
-
-### Changed
-- Dashboard audit summaries now preserve original rule indexes while filtering user-scoped rules to the current user.
-- Module version bumped to `136` so ProcessWire detects the `1.3.6` patch upgrade.
+- Split the former `Verk.module.php` monolith into focused internal files under `src/Traits` and `src/Services`, leaving `Verk.module.php` as the ProcessWire entrypoint.
+- Moved internal services (`VerkDB`, `VerkExportService`, `VerkFiles`, and `VerkNotify`) into `src/Services`.
+- Module version bumped to `150` so ProcessWire detects the `1.5.0` minor upgrade.
 
 ## [1.3.3] - 2026-06-18
-
-### Fixed
-- Standalone Verk TinyMCE editors now render the ProcessWire `.InputfieldTinyMCE` wrapper with `data-settings`, so height/resize/menu settings are actually available to `InputfieldTinyMCE.js`.
-- Module version bumped to `133` so ProcessWire detects the `1.3.3` patch upgrade.
-
-## [1.3.2] - 2026-06-18
-
-### Fixed
-- Verk TinyMCE editors now override the Insert menu as well as the toolbar, so ProcessWire image picker actions are not exposed without page/image-field context.
-- Module version bumped to `132` so ProcessWire detects the `1.3.2` patch upgrade.
-
-## [1.3.1] - 2026-06-18
-
-### Fixed
-- Rich-text editors now pass height and resize behavior through ProcessWire's `InputfieldTinyMCE` settings instead of forcing TinyMCE container height with CSS, so the Knowledge Base editor no longer collapses after initialization and the resize handle can work.
-- Module version bumped to `131` so ProcessWire detects the `1.3.1` patch upgrade.
-
-## [1.3.0] - 2026-06-18
 
 ### Added
 - Task assignment can now be scoped to selected ProcessWire roles so assignee dropdowns and filters stay manageable on sites with large frontend user bases.
 
 ### Changed
 - Assignee name lookups now load only referenced users instead of scanning broad user lists.
-- Module version bumped to `130` so ProcessWire detects the `1.3.0` minor upgrade.
-
-## [1.2.3] - 2026-06-18
-
-### Changed
 - Knowledge Base note editor now opens taller by default so longer notes are easier to edit when TinyMCE resizing is unavailable.
-- Module version bumped to `123` so ProcessWire detects the `1.2.3` patch upgrade.
+- Module version bumped to `133` so ProcessWire detects the `1.3.3` patch upgrade.
+
+### Fixed
+- Standalone Verk TinyMCE editors now render the ProcessWire `.InputfieldTinyMCE` wrapper with `data-settings`, so height/resize/menu settings are actually available to `InputfieldTinyMCE.js`.
+- Verk TinyMCE editors now override the Insert menu as well as the toolbar, so ProcessWire image picker actions are not exposed without page/image-field context.
+- Rich-text editors now pass height and resize behavior through ProcessWire's `InputfieldTinyMCE` settings instead of forcing TinyMCE container height with CSS, so the Knowledge Base editor no longer collapses after initialization and the resize handle can work.
 
 ## [1.2.2] - 2026-06-15
 
