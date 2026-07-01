@@ -979,6 +979,14 @@ body.dark-theme .vk-shell {
 .vk-dashboard-side {
     display: flex;
     flex-direction: column;
+    gap: 14px;
+}
+
+/* Cards are spaced by the column gap above; the per-card margin-top from
+   .vk-card-stack would double-space and, because columns reorder cards with
+   `order`, push the first visible card (e.g. Sprints) below its neighbour. */
+.vk-dashboard-side .vk-card-stack {
+    margin-top: 0 !important;
 }
 
 .vk-dashboard-card-sprints {
