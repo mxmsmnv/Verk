@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.1] - 2026-07-01
+
+### Fixed
+- Dashboard Sprints card now aligns flush with the My Tasks card by spacing dashboard side-column cards with `gap` instead of per-card leading margins.
+- Module version bumped to `151` so ProcessWire detects the `1.5.1` patch upgrade.
+
 ## [1.5.0] - 2026-06-30
 
 ### Added
