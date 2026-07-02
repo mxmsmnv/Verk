@@ -16,7 +16,7 @@ require_once __DIR__ . '/src/Traits/VerkMetaTrait.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 151
+ * @version 152
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -34,7 +34,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 151,
+            'version'  => 152,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',

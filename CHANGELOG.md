@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.2] - 2026-07-02
+
+### Added
+- Added `AGENTS.md` with Olivia/AI-agent guidance, safe operation boundaries, public calls, admin routes, configuration keys, and verification workflow.
+- Module version bumped to `152` so ProcessWire detects the `1.5.2` patch upgrade.
+
 ## [1.5.1] - 2026-07-01
 
 ### Fixed
