@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1] - 2026-08-25
+
+### Added
+
+- Added an aggregate-only MCP provider for task and sprint state without
+  titles, notes, people, files, knowledge-base content, or private page data.
+
 ## [1.6.0] - 2026-08-01
 
 ### Added

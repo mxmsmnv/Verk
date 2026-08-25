@@ -58,7 +58,7 @@ If this project helps your work, consider supporting future development: [GitHub
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.6.0` is published as module version `160`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.6.1` is published as module version `161`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
 
 ## External approvals API
 
@@ -103,6 +103,13 @@ Columns:
 Tasks link to PW pages via `page_id` (integer). The page data itself lives in PW — Verk never duplicates it. If a page is deleted in PW, the task orphans gracefully (linked page disappears, task remains).
 
 The page editor widget uses `hookAfter('ProcessPageEdit::buildForm')` — no template files modified. Widget output is controlled from Verk Settings and can show/hide status, priority, due date, quarter, assignee, empty state, and create link.
+
+## MCP Server integration
+
+When the optional first-party MCP Server is installed, Verk contributes the
+read-only `verk_status` tool. It returns aggregate task and sprint counts only;
+titles, notes, people, files, knowledge-base content, and private page data are
+not part of the remote surface.
 
 ## License
 

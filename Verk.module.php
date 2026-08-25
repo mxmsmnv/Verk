@@ -8,6 +8,7 @@ require_once __DIR__ . '/src/Traits/VerkSprintTrait.php';
 require_once __DIR__ . '/src/Traits/VerkDataTrait.php';
 require_once __DIR__ . '/src/Traits/VerkEndpointTrait.php';
 require_once __DIR__ . '/src/Traits/VerkMetaTrait.php';
+require_once __DIR__ . '/src/Traits/VerkMcpProviderTrait.php';
 
 /**
  * Verk
@@ -17,7 +18,7 @@ require_once __DIR__ . '/src/Traits/VerkMetaTrait.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 160
+ * @version 161
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -31,16 +32,18 @@ class Verk extends Process implements Module, ConfigurableModule {
     use VerkDataTrait;
     use VerkEndpointTrait;
     use VerkMetaTrait;
+    use VerkMcpProviderTrait;
 
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-            'version'  => 160,
+            'version'  => 161,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
             'icon'     => 'dashboard',
             'singular' => true,
+            'mcpProvider' => true,
             'autoload' => 'template=admin',
             'requires' => ['ProcessWire>=3.0.200', 'PHP>=8.0'],
             'permission'  => 'verk',
