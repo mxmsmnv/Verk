@@ -3,7 +3,7 @@
 /** Aggregate-only MCP integration for the private operations workspace. */
 trait VerkMcpProviderTrait {
     public function mcpProviderInfo(): array {
-        return ['name' => 'verk', 'title' => 'Verk', 'version' => '1.6.1'];
+        return ['name' => 'verk', 'title' => 'Verk', 'version' => '1.6.2'];
     }
 
     public function mcpTools(): array {
@@ -22,12 +22,12 @@ trait VerkMcpProviderTrait {
         $db = $this->wire('database');
         $tasks = ['total' => 0, 'plan' => 0, 'progress' => 0, 'done' => 0, 'overdue' => 0];
         try {
-            $row = $db->query("SELECT COUNT(*) total, SUM(status='plan') plan, SUM(status='progress') progress, SUM(status='done') done, SUM(status<>'done' AND due_date IS NOT NULL AND due_date<CURDATE()) overdue FROM vk_tasks")->fetch(\PDO::FETCH_ASSOC) ?: [];
+            $row = $db->query("SELECT COUNT(*) total, SUM(CASE WHEN status='plan' THEN 1 ELSE 0 END) plan, SUM(CASE WHEN status='progress' THEN 1 ELSE 0 END) progress, SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) done, SUM(CASE WHEN status<>'done' AND due_date IS NOT NULL AND due_date<CURDATE() THEN 1 ELSE 0 END) overdue FROM vk_tasks")->fetch(\PDO::FETCH_ASSOC) ?: [];
             foreach($tasks as $key => $_) $tasks[$key] = (int)($row[$key] ?? 0);
             $sprints = (int)$db->query('SELECT COUNT(*) FROM vk_sprints')->fetchColumn();
         } catch(\Throwable) {
             $sprints = 0;
         }
-        return ['version' => '1.6.1', 'tasks' => $tasks, 'sprints' => $sprints, 'private_records_exposed' => false, 'write_tools' => false];
+        return ['version' => '1.6.2', 'tasks' => $tasks, 'sprints' => $sprints, 'private_records_exposed' => false, 'write_tools' => false];
     }
 }

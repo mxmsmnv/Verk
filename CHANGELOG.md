@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.2] - 2026-09-26
+
+### Fixed
+
+- Made the MCP task-status aggregates portable to PostgreSQL with explicit
+  `CASE WHEN` conditional counts instead of MySQL boolean arithmetic.
+
+### Changed
+
+- Documented the ProcessWire version required for experimental SQLite and
+  PostgreSQL support.
+
 ## [1.6.1] - 2026-08-25
 
 ### Added

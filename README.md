@@ -42,6 +42,7 @@ If this project helps your work, consider supporting future development: [GitHub
 ## Requirements
 
 - ProcessWire >= 3.0.200
+- ProcessWire >= 3.0.274 for the experimental SQLite or PostgreSQL drivers
 - PHP >= 8.0
 - InputfieldTinyMCE is optional but used automatically for rich text fields when installed
 
@@ -58,7 +59,7 @@ If this project helps your work, consider supporting future development: [GitHub
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.6.1` is published as module version `161`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.6.2` is published as module version `162`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
 
 ## External approvals API
 
