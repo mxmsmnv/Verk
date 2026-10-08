@@ -22,7 +22,7 @@ If this project helps your work, consider supporting future development: [GitHub
 | **Content Audit** | Run PW selectors and dot-notation field checks to find missing content |
 | **Knowledge Base** | Rich editorial notes organized by category, searchable and exportable |
 | **Sprints** | Sprint planning, quarter grouping, task assignment, DOCX export, and progress tracking |
-| **Settings** | Calendar source, fiscal quarter start, assignee role scope, and configurable Page Editor Widget |
+| **Settings** | Calendar source, fiscal quarter start, assignee role scope, task status permissions, email notifications (membership and status changes), and configurable Page Editor Widget |
 
 ## Key features
 
@@ -31,6 +31,7 @@ If this project helps your work, consider supporting future development: [GitHub
 - **View on site** — opens the front-end URL in a new tab
 - **Page Editor Widget** — Verk injects a configurable task widget into ProcessPageEdit, with live settings preview
 - **Assignee role scope** — optionally keep task assignee dropdowns and filters limited to selected ProcessWire roles
+- **Status manager roles** — optionally let selected ProcessWire roles change the status of, and edit, any task, even tasks they are not on
 - **Audit to tasks** — create one task or bulk tasks from audit results; page context is prefilled
 - **Calendar** — configurable publication source plus task due dates in month, week, and quarter views
 - **Quarter planning** — fiscal quarter start month, sprint quarter filters, date planning helpers, and quarter labels on tasks
@@ -59,7 +60,7 @@ If this project helps your work, consider supporting future development: [GitHub
 
 ## Upgrade
 
-After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.6.2` is published as module version `162`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
+After copying a new version into `site/modules/Verk/`, run **Admin > Modules > Refresh** so ProcessWire detects the module version bump. Version `1.7.0` is published as module version `170`; the upgrade hook runs `VerkDB::migrate()` and keeps existing Verk data intact. The additive `vk_external_approvals` table maps reviewed integration tasks without changing existing task rows; back up the database before upgrading a live site.
 
 ## External approvals API
 

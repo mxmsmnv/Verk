@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.7.0] - 2026-10-08
+
+### Added
+
+- Added opt-in reviewer and collaborator status-change permissions, including
+  matching dashboard controls.
+- Added validated status-manager roles that may edit and change the status of
+  any task without widening review-decision or deletion permissions.
+- Added opt-in status-change email notifications for task participants, with
+  actor exclusion and recipient deduplication.
+
+### Fixed
+
+- Restricted ordinary review decisions to superusers, the task creator, and
+  listed reviewers. Provider-backed decisions retain their provider permission
+  boundary, and unavailable or unauthorized providers do not expose controls.
+
 ## [1.6.2] - 2026-09-26
 
 ### Fixed

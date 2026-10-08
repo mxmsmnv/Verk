@@ -99,6 +99,9 @@ From `Verk`:
 - `getWorkloadByAssignee(): array`
 - `getConfig(): array`
 - `getAllUsers(array $includeUserIds = []): array`
+- `taskNotifyRecipients(int $taskId): array`
+- `isStatusManager(): bool`
+- `canDecideReview(int $taskId, array $task): bool`
 - `taskStatusWhere(string $status, array &$params): string`
 - `statusLabel(string $status): string`
 - `priorityLabel(string $priority): string`
@@ -212,6 +215,14 @@ Default config is defined in `getDefaultConfig()`:
 - `notify_assignee`
 - `notify_collaborator`
 - `notify_reviewer`
+- `notify_status`
+- `status_edit_reviewer`
+- `status_edit_collaborator`
+- `status_manager_roles`
+- `notify_status`
+- `status_edit_reviewer`
+- `status_edit_collaborator`
+- `status_manager_roles`
 
 Config updates should preserve unrelated config keys. `saveConfig()` can replace
 the whole config blob, so follow the existing carry-forward pattern in
@@ -293,7 +304,9 @@ php -l src/Traits/*.php
 php -l src/Services/*.php
 php -l views/*.php
 php -l views/partials/*.php
-php VerkTest.php
+php tests/status-permissions.php
+php tests/status-notifications.php
+php tests/release-contract.php
 git diff --check
 ```
 

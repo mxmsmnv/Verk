@@ -38,6 +38,7 @@ $calendarStatus = $calendarReady ? __('Configured') : __('Needs setup');
 $calendarStatusClass = $calendarReady ? 'vk-label-done' : 'vk-label-open';
 $quarterStartMonth = max(1, min(12, (int)($cfg['quarter_start_month'] ?? 1)));
 $assigneeRoles = trim((string)($cfg['assignee_roles'] ?? ''));
+$statusManagerRoles = trim((string)($cfg['status_manager_roles'] ?? ''));
 $widgetEnabled = !empty($cfg['page_widget_enabled']);
 $widgetStatus = $widgetEnabled ? __('Enabled') : __('Disabled');
 $widgetStatusClass = $widgetEnabled ? 'vk-label-done' : 'vk-label-open';
@@ -277,16 +278,46 @@ ob_start();
                     <input type="hidden" name="action" value="save_settings">
 
                     <div class="vk-settings-subtitle"><?= __('Email notifications') ?></div>
-                    <p class="vk-settings-intro"><?= __('Email users when they are added to a task as assignee, collaborator, or reviewer.') ?></p>
+                    <p class="vk-settings-intro"><?= __('Email users when they are added to a task as assignee, collaborator, or reviewer, and when a task they are on changes status.') ?></p>
                     <div class="vk-settings-options">
-                        <label><input type="hidden" name="notify_enabled" value="0"><input type="checkbox" name="notify_enabled" value="1"<?= $checked($cfg['notify_enabled']) ?>><span><strong><?= __('Enable notifications') ?></strong><small><?= __('Master switch for all task membership emails') ?></small></span></label>
+                        <label><input type="hidden" name="notify_enabled" value="0"><input type="checkbox" name="notify_enabled" value="1"<?= $checked($cfg['notify_enabled']) ?>><span><strong><?= __('Enable notifications') ?></strong><small><?= __('Master switch for every Verk task email') ?></small></span></label>
                         <label><input type="hidden" name="notify_assignee" value="0"><input type="checkbox" name="notify_assignee" value="1"<?= $checked($cfg['notify_assignee']) ?>><span><strong><?= __('Assignee') ?></strong><small><?= __('Email when set as a task assignee') ?></small></span></label>
                         <label><input type="hidden" name="notify_collaborator" value="0"><input type="checkbox" name="notify_collaborator" value="1"<?= $checked($cfg['notify_collaborator']) ?>><span><strong><?= __('Collaborator') ?></strong><small><?= __('Email when added as a collaborator') ?></small></span></label>
                         <label><input type="hidden" name="notify_reviewer" value="0"><input type="checkbox" name="notify_reviewer" value="1"<?= $checked($cfg['notify_reviewer']) ?>><span><strong><?= __('Reviewer') ?></strong><small><?= __('Email when added as a reviewer') ?></small></span></label>
+                        <label><input type="hidden" name="notify_status" value="0"><input type="checkbox" name="notify_status" value="1"<?= $checked($cfg['notify_status']) ?>><span><strong><?= __('Status changes') ?></strong><small><?= __('Email everyone on a task when its status changes') ?></small></span></label>
                     </div>
 
                     <div class="vk-form-actions">
                         <button type="submit" class="uk-button uk-button-primary"><?= __('Save Notifications') ?></button>
+                    </div>
+                </form>
+
+                <form method="post" action="<?= $url ?>" class="vk-widget-settings-form" id="vk-perm-settings-form" style="margin-top:24px">
+                    <input type="hidden" name="<?= $csrfN ?>" value="<?= $csrf ?>">
+                    <input type="hidden" name="action" value="save_settings">
+
+                    <div class="vk-settings-subtitle"><?= __('Task permissions') ?></div>
+                    <p class="vk-settings-intro"><?= __('The assignee, the task creator, and superusers can always change a task\'s status. Extend that to the other people on a task, or grant it to whole roles.') ?></p>
+                    <div class="vk-settings-options">
+                        <label><input type="hidden" name="status_edit_reviewer" value="0"><input type="checkbox" name="status_edit_reviewer" value="1"<?= $checked($cfg['status_edit_reviewer']) ?>><span><strong><?= __('Reviewers can change status') ?></strong><small><?= __('Lets a reviewer set a task to Done from the task lists and dashboard') ?></small></span></label>
+                        <label><input type="hidden" name="status_edit_collaborator" value="0"><input type="checkbox" name="status_edit_collaborator" value="1"<?= $checked($cfg['status_edit_collaborator']) ?>><span><strong><?= __('Collaborators can change status') ?></strong><small><?= __('Lets a collaborator set a task to Done from the task lists and dashboard') ?></small></span></label>
+                    </div>
+
+                    <div class="vk-field">
+                        <label class="uk-form-label"><?= __('Status manager roles') ?> <span class="vk-inline-note"><?= __('(comma-separated)') ?></span></label>
+                        <input type="text" name="status_manager_roles"
+                            value="<?= htmlspecialchars($statusManagerRoles) ?>"
+                            placeholder="<?= __('e.g. editor, manager') ?>"
+                            class="uk-input"
+                            list="vk-status-manager-roles-list">
+                        <div class="vk-field-help"><?= __('Users with these roles can change the status of, and edit, any task — even tasks they are not on. Leave empty for no status managers. Use role names, not labels.') ?></div>
+                        <datalist id="vk-status-manager-roles-list">
+                            <?php foreach ($allRoles as $roleName): ?><option value="<?= htmlspecialchars($roleName) ?>"><?php endforeach; ?>
+                        </datalist>
+                    </div>
+
+                    <div class="vk-form-actions">
+                        <button type="submit" class="uk-button uk-button-primary"><?= __('Save Permissions') ?></button>
                     </div>
                 </form>
                     </div>
