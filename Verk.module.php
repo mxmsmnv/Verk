@@ -18,7 +18,7 @@ require_once __DIR__ . '/src/Traits/VerkMcpProviderTrait.php';
  *
  * @author  Maxim Semenov <maxim@smnv.org> (smnv.org)
  * @license MIT
- * @version 170
+ * @version 180
  */
 class Verk extends Process implements Module, ConfigurableModule {
 
@@ -37,7 +37,7 @@ class Verk extends Process implements Module, ConfigurableModule {
     public static function getModuleInfo(): array {
         return [
             'title'    => 'Verk',
-			'version'  => 170,
+			'version'  => 180,
             'summary'  => 'Site ops layer for ProcessWire: tasks, sprints, quarter planning, editorial calendar, content audit, and knowledge base.',
             'author'   => 'Maxim Semenov',
             'href'     => 'https://smnv.org',
@@ -85,6 +85,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             'notify_collaborator' => 1,
             'notify_reviewer' => 1,
             'notify_status' => 0,
+            'notify_comment' => 0,
             'status_edit_reviewer' => 0,
             'status_edit_collaborator' => 0,
             'status_manager_roles' => '',
@@ -1174,6 +1175,11 @@ class Verk extends Process implements Module, ConfigurableModule {
         if ($text && $taskId && $this->fwTaskExists($taskId)) {
             $stmt = $db->prepare("INSERT INTO vk_comments (task_id, user_id, text, created_at) VALUES (:tid, :uid, :text, NOW())");
             $stmt->execute([':tid' => $taskId, ':uid' => $user->id, ':text' => $text]);
+            $task = $this->getTask($taskId);
+            $this->notify->commentAdded(
+                $taskId, (string) ($task['title'] ?? ''), 'comment', $text,
+                $this->taskNotifyRecipients($taskId), (int) $user->id
+            );
         } elseif ($text && $taskId) {
             $this->error($this->_('Task does not exist.'));
         }
@@ -1252,6 +1258,10 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         $db->prepare("INSERT INTO vk_comments (task_id, user_id, text, kind, created_at) VALUES (:tid, :uid, :text, :kind, NOW())")
            ->execute([':tid' => $taskId, ':uid' => $user->id, ':text' => $text, ':kind' => $decision]);
+        $this->notify->commentAdded(
+            $taskId, (string) $task['title'], $decision, $text,
+            $this->taskNotifyRecipients($taskId), (int) $user->id
+        );
 
         if ($task['status'] === 'review') {
             $newStatus = $decision === 'approved' ? 'done' : 'in_progress';
@@ -1333,6 +1343,7 @@ class Verk extends Process implements Module, ConfigurableModule {
             'notify_collaborator' => $has('notify_collaborator') ? (int)(bool)$input->post('notify_collaborator') : (int)$current['notify_collaborator'],
             'notify_reviewer' => $has('notify_reviewer') ? (int)(bool)$input->post('notify_reviewer') : (int)$current['notify_reviewer'],
             'notify_status' => $has('notify_status') ? (int)(bool)$input->post('notify_status') : (int)$current['notify_status'],
+            'notify_comment' => $has('notify_comment') ? (int)(bool)$input->post('notify_comment') : (int)$current['notify_comment'],
             'status_edit_reviewer' => $has('status_edit_reviewer') ? (int)(bool)$input->post('status_edit_reviewer') : (int)$current['status_edit_reviewer'],
             'status_edit_collaborator' => $has('status_edit_collaborator') ? (int)(bool)$input->post('status_edit_collaborator') : (int)$current['status_edit_collaborator'],
             'status_manager_roles' => $has('status_manager_roles') ? $this->sanRoleList((string)$input->post('status_manager_roles')) : (string)($current['status_manager_roles'] ?? ''),

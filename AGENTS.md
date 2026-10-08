@@ -216,6 +216,7 @@ Default config is defined in `getDefaultConfig()`:
 - `notify_collaborator`
 - `notify_reviewer`
 - `notify_status`
+- `notify_comment`
 - `status_edit_reviewer`
 - `status_edit_collaborator`
 - `status_manager_roles`
