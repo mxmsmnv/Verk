@@ -8,6 +8,11 @@ class VerkNotify {
         $this->module = $module;
     }
 
+    /** Whether comment/review notifications are enabled by both switches. */
+    public function commentNotificationsEnabled(): bool {
+        return $this->cfgOn('notify_comment');
+    }
+
     /**
      * Notify users newly added to a task role. Consolidates multiple new roles
      * for the same user into one email. Never emails the actor.
@@ -112,7 +117,7 @@ class VerkNotify {
      * emailed. $kind: 'comment' | 'approved' | 'changes_requested'.
      */
     public function commentAdded(int $taskId, string $title, string $kind, string $html, array $recipientIds, int $actorId): void {
-        if (!$this->cfgOn('notify_comment')) return;
+        if (!$this->commentNotificationsEnabled()) return;
 
         $ids = [];
         foreach ($recipientIds as $uid) {

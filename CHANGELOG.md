@@ -8,6 +8,8 @@
   to a task. Everyone on the task (creator, assignee, reviewers,
   collaborators) receives a plain-text excerpt and link; the author is never
   emailed.
+- Suppressed the redundant status-change email when the same review decision
+  is already covered by the enabled comments-and-reviews notification.
 
 ## [1.7.0] - 2026-10-08
 

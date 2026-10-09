@@ -52,9 +52,12 @@ $services = [
 ];
 $module = new Verk(['notify_enabled' => 1, 'notify_comment' => 1], $services);
 $notify = new VerkNotify($module);
+$checks = [
+    'comment channel reports enabled' => $notify->commentNotificationsEnabled(),
+];
 $notify->commentAdded(7, 'Ship release', 'comment', '<p>Looks good &amp; <strong>ready</strong></p>', [1, 2, 2, 3, 4, 0], 1);
 
-$checks = [
+$checks += [
     'author excluded and recipients deduplicated' => array_column(NotifyMail::$sent, 'to') === ['assignee@example.test', 'reviewer@example.test'],
     'comment subject' => (NotifyMail::$sent[0]['subject'] ?? '') === '[Verk] New comment on "Ship release"',
     'plain-text excerpt included' => str_contains(NotifyMail::$sent[0]['body'] ?? '', 'Looks good & ready')
@@ -77,6 +80,7 @@ $module->config['notify_comment'] = 0;
 $notify->commentAdded(7, 'Ship release', 'comment', 'Hi', [2], 1);
 $checks['comment toggle is respected'] = NotifyMail::$sent === [];
 $module->config = ['notify_enabled' => 0, 'notify_comment' => 1];
+$checks['comment channel follows master switch'] = !$notify->commentNotificationsEnabled();
 $notify->commentAdded(7, 'Ship release', 'comment', 'Hi', [2], 1);
 $checks['master switch is respected'] = NotifyMail::$sent === [];
 

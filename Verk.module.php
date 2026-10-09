@@ -1258,24 +1258,27 @@ class Verk extends Process implements Module, ConfigurableModule {
 
         $db->prepare("INSERT INTO vk_comments (task_id, user_id, text, kind, created_at) VALUES (:tid, :uid, :text, :kind, NOW())")
            ->execute([':tid' => $taskId, ':uid' => $user->id, ':text' => $text, ':kind' => $decision]);
-        $this->notify->commentAdded(
-            $taskId, (string) $task['title'], $decision, $text,
-            $this->taskNotifyRecipients($taskId), (int) $user->id
-        );
+        $commentNotificationEnabled = $this->notify->commentNotificationsEnabled();
 
         if ($task['status'] === 'review') {
             $newStatus = $decision === 'approved' ? 'done' : 'in_progress';
             $db->prepare("UPDATE vk_tasks SET status = :s WHERE id = :id")->execute([':s' => $newStatus, ':id' => $taskId]);
-            $this->notify->statusChanged(
-                $taskId, (string) $task['title'], (string) $task['status'], $newStatus,
-                $this->taskNotifyRecipients($taskId), (int) $user->id
-            );
+            if (!$commentNotificationEnabled) {
+                $this->notify->statusChanged(
+                    $taskId, (string) $task['title'], (string) $task['status'], $newStatus,
+                    $this->taskNotifyRecipients($taskId), (int) $user->id
+                );
+            }
             $this->message($decision === 'approved'
                 ? $this->_('Review approved; task marked done.')
                 : $this->_('Changes requested; task moved to In Progress.'));
         } else {
             $this->message($this->_('Review decision recorded.'));
         }
+        $this->notify->commentAdded(
+            $taskId, (string) $task['title'], $decision, $text,
+            $this->taskNotifyRecipients($taskId), (int) $user->id
+        );
         $this->wire('session')->redirect($back);
         return '';
     }
