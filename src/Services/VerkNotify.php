@@ -106,6 +106,60 @@ class VerkNotify {
         }
     }
 
+    /**
+     * Notify everyone on a task that a comment or review decision was added.
+     * Recipients come from Verk::taskNotifyRecipients(); the author is never
+     * emailed. $kind: 'comment' | 'approved' | 'changes_requested'.
+     */
+    public function commentAdded(int $taskId, string $title, string $kind, string $html, array $recipientIds, int $actorId): void {
+        if (!$this->cfgOn('notify_comment')) return;
+
+        $ids = [];
+        foreach ($recipientIds as $uid) {
+            $uid = (int) $uid;
+            if ($uid > 0 && $uid !== $actorId) $ids[$uid] = $uid;
+        }
+        if (!$ids) return;
+
+        switch ($kind) {
+            case 'approved':
+                $subject = sprintf('[Verk] Task approved: "%s"', $title);
+                $verb = 'approved';
+                break;
+            case 'changes_requested':
+                $subject = sprintf('[Verk] Changes requested: "%s"', $title);
+                $verb = 'requested changes on';
+                break;
+            default:
+                $subject = sprintf('[Verk] New comment on "%s"', $title);
+                $verb = 'commented on';
+                break;
+        }
+
+        // Comment text is sanitized HTML; send a short plain-text excerpt.
+        $plain = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $excerpt = $plain === '' ? '' : (mb_strlen($plain) > 200 ? rtrim(mb_substr($plain, 0, 200)) . '…' : $plain);
+
+        $taskUrl = $this->deskUrl() . '?view=task-edit&id=' . $taskId;
+        $actor   = $this->actorName($actorId);
+
+        foreach ($ids as $uid) {
+            $rcpt = $this->recipient($uid);
+            if (!$rcpt) continue;
+
+            $body = sprintf(
+                "Hi %s,\n\n%s %s a Verk task you're on.\n\nTask: %s\n",
+                $rcpt['name'] ?: 'there',
+                $actor,
+                $verb,
+                $title
+            );
+            if ($excerpt !== '') $body .= sprintf("\n%s\n", $excerpt);
+            $body .= sprintf("\nOpen the task:\n%s\n", $taskUrl);
+            $this->sendPlain($rcpt['email'], $subject, $body);
+        }
+    }
+
     /** Send a single digest email to an assignee given N freshly bulk-created tasks. */
     public function bulkAssigned(int $assigneeId, int $count, int $actorId): void {
         if ($count < 1) return;

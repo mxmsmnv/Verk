@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.0] - 2026-10-08
+
+### Added
+
+- Added opt-in email notifications when a comment or review decision is added
+  to a task. Everyone on the task (creator, assignee, reviewers,
+  collaborators) receives a plain-text excerpt and link; the author is never
+  emailed.
+
 ## [1.7.0] - 2026-10-08
 
 ### Added
